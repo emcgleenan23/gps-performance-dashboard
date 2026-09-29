@@ -1,0 +1,13 @@
+# generated
+outputs/
+cache/
+sample_data/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+# never commit real athlete data
+data/
+reference/
+*.csv
+*.parquet

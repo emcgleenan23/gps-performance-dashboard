@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Session Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span><div><div class="title">Senior Football — Performance</div><div class="sub">STATSports GPS</div></div></div>
+    <nav class="tabs" aria-label="Pages">
+      <a href="index.html" data-page="index.html" aria-current="page">Session analysis</a>
+      <a href="load.html" data-page="load.html">Load monitoring</a>
+    </nav>
+    <span class="badge" id="badge">Pipeline output</span>
+  </header>
+
+  <div class="shell">
+    <aside class="side" aria-label="Filters">
+      <section>
+        <h3><span class="n">1</span>Team / player</h3>
+        <div class="fld"><span class="lbl">Squad</span><div class="seg" id="f-sq" role="group" aria-label="Squad"></div></div>
+        <div class="fld"><label for="f-opp">Opposition</label><select id="f-opp"></select></div>
+        <div class="fld"><label for="f-sess">Date</label><select id="f-sess"></select></div>
+        <div class="fld"><label for="f-a">Player</label><select id="f-a"></select></div>
+        <div class="fld"><span class="lbl">Period</span><div class="seg" id="f-per" role="group" aria-label="Period"></div>
+          <select id="f-drill" aria-label="Drill" style="margin-top:6px;display:none"></select></div>
+      </section>
+      <section>
+        <h3><span class="n">2</span>Physical metric</h3>
+        <div class="checks" id="f-mets" role="group" aria-label="Metrics plotted"></div>
+        <div class="hint">Rate per minute over time. Each extra metric adds its own y-axis.</div>
+      </section>
+      <section>
+        <h3><span class="n">3</span>Most demanding scenario</h3>
+        <div class="fld"><span class="lbl">Calculated on</span><div class="seg" id="f-mm" role="group" aria-label="MDS metric"></div></div>
+        <div class="fld"><span class="lbl">Window length</span><div class="seg" id="f-mw" role="group" aria-label="MDS window"></div></div>
+      </section>
+      <section>
+        <h3><span class="n">4</span>Benchmark</h3>
+        <div class="seg" id="f-bench" role="group" aria-label="Benchmark"></div>
+        <div class="hint" id="bench-hint"></div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <div class="sec"><span class="l">A</span><span class="t">Performance summary</span><span class="d" id="d-A"></span><span class="rule"></span></div>
+      <section class="story" aria-live="polite"><div class="eyebrow" id="eyebrow"></div><h1 id="headline"></h1><ul id="bullets"></ul></section>
+      <section class="kpis" id="kpis"></section>
+
+      <div class="sec"><span class="l">B</span><span class="t">Performance timeline</span><span class="d">metric per minute over the session · benchmark values right of the plot</span><span class="rule"></span></div>
+      <div class="panel">
+        <h2 id="h-time"></h2><p class="p-sub" id="s-time"></p>
+        <div id="c-time"></div>
+        <div class="legend" id="lg-time"></div>
+      </div>
+
+      <div class="sec"><span class="l">C</span><span class="t">Player comparison</span><span class="d">distance, HSR, sprint distance and max speed for the selected period</span><span class="rule"></span></div>
+      <div class="panel">
+        <div class="p-head"><div><h2 id="h-bars"></h2><p class="p-sub" id="s-bars"></p></div>
+          <div><span class="lbl" style="font-size:11.5px;font-weight:600;color:var(--muted);margin-right:6px">Sort by</span><div class="toggle" id="f-sort" role="group" aria-label="Sort players by"></div></div></div>
+        <div id="c-bars"></div>
+      </div>
+      <div class="sec"><span class="l">D</span><span class="t">Metrics table</span><span class="d">totals, rate per minute and most demanding scenarios (1–10 min) for every metric</span><span class="rule"></span></div>
+      <div class="panel">
+        <h2 id="h-tbl"></h2><p class="p-sub" id="s-tbl"></p>
+        <div class="tbl-bar">
+          <div class="fld"><span class="lbl">Period</span><div class="seg" id="t-per" role="group" aria-label="Table period"></div></div>
+          <div class="fld"><label for="t-line">Position</label><select id="t-line"></select></div>
+          <div class="fld"><label for="t-grp">Playing group</label><select id="t-grp"></select></div>
+          <div class="fld"><span class="lbl">Rows</span><div class="seg" id="t-by" role="group" aria-label="Rows"></div></div>
+          <button class="btn" id="t-csv" title="Download the table as CSV">Download CSV</button>
+        </div>
+        <div class="tbl-wrap"><table class="mtable" id="mtable"></table></div>
+      </div>
+      <div class="sec"><span class="l">E</span><span class="t">Metric definitions</span><span class="d">what each number on this page means</span><span class="rule"></span></div>
+      <div class="defs">
+        <div class="def"><div class="dh"><span class="sw" style="background:var(--m-td)"></span>Total distance (TD)</div>
+          <p>How far the player travelled, in metres. Built up from STATSports' filtered speed, 10 times a second. <b>TD/min</b> is the same distance divided by minutes on the pitch, so players with different minutes can be compared fairly.</p></div>
+        <div class="def"><div class="dh"><span class="sw" style="background:var(--m-hsr)"></span>High-speed running (HSR)</div>
+          <p>Metres covered while running faster than <b>5.5 m/s</b> (19.8 km/h), roughly a hard stride. Sprint distance is included in this figure.</p></div>
+        <div class="def"><div class="dh"><span class="sw" style="background:var(--m-spr)"></span>Sprint distance</div>
+          <p>Metres covered faster than <b>7 m/s</b> (25.2 km/h), i.e. near-maximal running. Usually small numbers that vary a lot game to game, so compare them against the player's own history.</p></div>
+        <div class="def"><div class="dh"><span class="sw" style="background:var(--m-tal)"></span>Total acceleration load (TAL)</div>
+          <p>How much a player changes speed, speeding up <i>and</i> slowing down, regardless of how far they go. It adds up every change in speed between readings (Σ|Δv|, after Schelling et&nbsp;al., 2025), in <b>m·s⁻¹</b>. TAL/min ÷ 60 gives the average acceleration in m·s⁻². High TAL with modest distance = lots of stop-start, contact and turning.</p></div>
+        <div class="def"><div class="dh"><span class="sw" style="background:#1f2430;opacity:.35"></span>Max speed</div>
+          <p>The fastest filtered speed reached in the selected period, in m/s (× 3.6 for km/h). Readings above 10.5 m/s are treated as GPS errors and ignored.</p></div>
+        <div class="def"><div class="dh"><span class="sw" style="background:rgba(31,36,48,.14);border:1px dashed rgba(31,36,48,.5)"></span>Most demanding scenario (MDS)</div>
+          <p>The hardest spell of the game for a given window length (1, 2, 3, 5 or 10 min), expressed per minute. For example "MDS 3′ TD = 150 m/min" means the busiest 3 minutes averaged 150 m per minute. It is never counted across half-time. Useful for setting the intensity of conditioning drills.</p></div>
+        <div class="def"><div class="dh">Minutes &amp; periods</div>
+          <p>Minutes = time the unit recorded the player in the chosen period. Halves come from the "1st Half" / "2nd Half" markers in the STATSports export; "full game" is both halves, excluding warm-up and half-time. Training can be viewed as a whole session or drill by drill.</p></div>
+        <div class="def"><div class="dh">Benchmark</div>
+          <p>The comparison line and the ± % tags. It is the season average per minute for the same kind of session (senior, reserve or training) and the same period, for the group you choose: the player themselves, the squad, their position, or their playing group.</p></div>
+        <div class="def"><div class="dh">Squad average</div>
+          <p>With no player selected, figures are the average of the players who recorded in that session. On the timeline it is the average across players present in each 10-second slice. Players are shown as codes (P01, P02…) to keep the data anonymous.</p></div>
+      </div>
+
+      <p class="foot" id="foot"></p>
+    </main>
+  </div>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script src="../outputs/dashboard_data.js"></script>
+<script src="../outputs/session_bins.js"></script>
+<script src="common.js"></script>
+<script>
+/* ============================================================================
+   SESSION ANALYSIS — one session/match at a time, 10-second resolution
+   ========================================================================== */
+const SB = window.SESSION_BINS || null;
+const MK = ['td','hsr','spr','tal'];
+const WINS = [1,2,3,5,10];
+const st = {sq:'Senior', opp:'all', s:null, a:'squad', per:'full', drill:'', mets:['td'], mm:'td', mw:3, bench:'squad', sort:'td'};
+
+/* ---------- session helpers ---------- */
+const kindOf = s => s.type==='Match' ? (gradeOf(s.d)||'Match') : 'Training';
+const oppOf  = s => s.type==='Match' ? ((FIX[s.d]||{}).opp||'') : '';
+const sessLabel = s => `${fmtDL(s.d)} · ${s.type==='Match'?(fixLabel(s.d)||'Match'):'Training'}`;
+function halves(s){
+  const k=Object.keys(s.drills||{});
+  const h1=k.find(x=>/(1st|first)\s*half/i.test(x)), h2=k.find(x=>/(2nd|second)\s*half/i.test(x));
+  return h1&&h2 ? {h1:s.drills[h1], h2:s.drills[h2]} : null;
+}
+/* included bin ranges for a period: list of [a,b] (inclusive) */
+function ranges(s,per,drill){
+  const H=halves(s);
+  if(s.type==='Match'&&H){
+    if(per==='1st') return [H.h1]; if(per==='2nd') return [H.h2]; return [H.h1,H.h2];
+  }
+  if(s.type!=='Match'&&per==='drill'&&drill&&s.drills[drill]) return [s.drills[drill]];
+  return [[0,s.n-1]];
+}
+function periodKey(){ return st.per==='drill'?'drill:'+st.drill:st.per; }
+const scaleOf = k => (SB.scale||{})[k]||1;
+function raw(pl,k){ const sc=scaleOf(k); return pl[k].map(v=>v<0?null:v/sc); }
+function squadSeries(s,k,who){          // per-bin mean over players present
+  const ids=who||Object.keys(s.players); const out=new Array(s.n).fill(null);
+  for(let i=0;i<s.n;i++){ let t=0,c=0; ids.forEach(a=>{const v=s.players[a][k][i]; if(v>=0){t+=v;c++;}}); if(c) out[i]=t/c/scaleOf(k); }
+  return out;
+}
+function seriesFor(s,a,k){ return a==='squad'?squadSeries(s,k):raw(s.players[a],k); }
+function inRanges(i,R){ return R.some(([a,b])=>i>=a&&i<=b); }
+/* totals for one player over ranges: {sum, min (valid minutes), vmax} */
+function totals(pl,k,R){ let sum=0,c=0; R.forEach(([a,b])=>{for(let i=a;i<=b;i++){const v=pl[k][i]; if(v>=0){sum+=v;c++;}}}); return {sum:sum/scaleOf(k), min:c*(SB.bin_s||10)/60}; }
+function vmaxOf(pl,R){ let m=0; R.forEach(([a,b])=>{for(let i=a;i<=b;i++){if(pl.vmax[i]>m)m=pl.vmax[i];}}); return m/scaleOf('vmax'); }
+/* per-minute rate at each bin: trailing 1-min sum (6 x 10 s), needs >=3 valid bins */
+function perMin(vals){ const per=60/(SB.bin_s||10); return vals.map((_,i)=>{ let t=0,c=0; for(let j=Math.max(0,i-per+1);j<=i;j++){ if(vals[j]!=null){t+=vals[j];c++;} } return c>=Math.ceil(per/2)?t*per/c:null; }); }
+/* MDS: best rolling window (w min) inside each range; returns {rate (/min), a, b} */
+/* MDS with prefix sums (fast enough for every player x metric x window in the table) */
+function mdsRate(vals,R,w){ const L=w*60/(SB.bin_s||10); let best=null;
+  R.forEach(([a,b])=>{ if(b-a+1<L) return; let t=0; for(let j=a;j<a+L;j++) t+=vals[j]||0; if(best==null||t>best) best=t;
+    for(let i=a+1;i+L-1<=b;i++){ t+=(vals[i+L-1]||0)-(vals[i-1]||0); if(t>best) best=t; } });
+  return best==null?null:best/w; }
+function mds(vals,R,w){ const L=w*60/(SB.bin_s||10); let best=null;
+  R.forEach(([a,b])=>{ for(let i=a;i+L-1<=b;i++){ let t=0; for(let j=i;j<i+L;j++) t+=vals[j]||0; if(!best||t>best.t) best={t,a:i,b:i+L-1}; } });
+  return best?{rate:best.t/w,a:best.a,b:best.b}:null; }
+
+/* ---------- benchmarks: season mean rate per minute, same session type + period ---------- */
+const BCACHE={};
+function benchSet(){ if(st.a==='squad'||st.bench==='squad') return a=>true;
+  const me=INFO[st.a]||{};
+  if(st.bench==='player') return a=>a===st.a;
+  if(st.bench==='position') return a=>me.line&&(INFO[a]||{}).line===me.line;
+  if(st.bench==='group') return a=>me.group&&(INFO[a]||{}).group===me.group;
+  return a=>true; }
+function benchRates(s){
+  const kind=kindOf(s), pk=periodKey(), key=[kind,pk,st.a,st.bench].join('|');
+  if(BCACHE[key]) return BCACHE[key];
+  const ok=benchSet(), acc={td:[],hsr:[],spr:[],tal:[],vmax:[]};
+  SB.sessions.forEach(x=>{ if(kindOf(x)!==kind) return;
+    let R; if(st.per==='drill'){ if(!x.drills[st.drill]) return; R=[x.drills[st.drill]]; }
+    else { if((st.per==='1st'||st.per==='2nd')&&!halves(x)) return; R=ranges(x,st.per,''); }
+    Object.entries(x.players).forEach(([a,pl])=>{ if(!ok(a)) return; const t0=totals(pl,'td',R); if(t0.min<5) return;
+      MK.forEach(k=>{const t=totals(pl,k,R); acc[k].push(t.sum/t.min);}); acc.vmax.push(vmaxOf(pl,R)); }); });
+  const out={n:acc.td.length}; MK.concat('vmax').forEach(k=>out[k]=acc[k].length?mean(acc[k]):null);
+  return BCACHE[key]=out; }
+function benchName(){ if(st.a==='squad'||st.bench==='squad') return 'squad average';
+  const me=INFO[st.a]||{};
+  return st.bench==='player'?`${st.a}'s own average`:st.bench==='position'?`${me.line||'position'} average`:`${me.group||'playing group'} average`; }
+
+/* ============================================================================
+   CONTROLS
+   ========================================================================== */
+function sessList(){ return SB.sessions.map((s,i)=>({s,i})).filter(({s})=>{
+  if(st.sq==='Training') return s.type!=='Match';
+  if(st.sq==='Senior'||st.sq==='Reserve') return s.type==='Match'&&gradeOf(s.d)===st.sq;
+  return true; }).filter(({s})=>st.opp==='all'||oppOf(s)===st.opp); }
+function buildControls(){
+  seg('f-sq',[{v:'all',l:'All'},{v:'Senior',l:'Senior'},{v:'Reserve',l:'Reserve'},{v:'Training',l:'Training'}],st.sq,v=>{st.sq=v;st.opp='all';st.s=null;render();});
+  // opposition from the squad's matches
+  const opps=[...new Set(SB.sessions.filter(s=>s.type==='Match'&&(st.sq==='all'||gradeOf(s.d)===st.sq)).map(oppOf).filter(Boolean))].sort();
+  sel('f-opp',[{v:'all',l:st.sq==='Training'?'— (training)':'All opposition'}].concat(opps.map(o=>({v:o,l:o}))),st.opp,v=>{st.opp=v;st.s=null;render();});
+  document.getElementById('f-opp').disabled=st.sq==='Training';
+  const L=sessList(); if(!L.some(o=>o.i===st.s)) st.s=L.length?L[L.length-1].i:null;
+  sel('f-sess',L.slice().reverse().map(({s,i})=>({v:i,l:sessLabel(s)})),st.s,v=>{st.s=+v;render();});
+  if(st.s==null) return;
+  const s=SB.sessions[st.s];
+  const ids=Object.keys(s.players).sort(); if(st.a!=='squad'&&!ids.includes(st.a)) st.a='squad';
+  sel('f-a',[{v:'squad',l:`Squad average (${ids.length} players)`}].concat(ids.map(a=>({v:a,l:`${a} · ${(INFO[a]||{}).line||'—'}`}))),st.a,v=>{st.a=v;render();});
+  // period
+  const H=halves(s), dsel=document.getElementById('f-drill');
+  if(s.type==='Match'){
+    if(!H&&st.per!=='full') st.per='full';
+    seg('f-per',[{v:'full',l:H?'Full game':'Full recording'},{v:'1st',l:'1st half',disabled:!H},{v:'2nd',l:'2nd half',disabled:!H}],st.per,v=>{st.per=v;render();});
+    dsel.style.display='none';
+  }else{
+    const drills=Object.keys(s.drills||{}).filter(k=>k!=='Entire Session');
+    if(st.per==='1st'||st.per==='2nd') st.per='full';
+    if(st.per==='drill'&&!drills.includes(st.drill)) st.per='full';
+    seg('f-per',[{v:'full',l:'Full session'},{v:'drill',l:'Drill',disabled:!drills.length}],st.per,v=>{st.per=v;if(v==='drill'&&!st.drill)st.drill=drills[0];render();});
+    dsel.style.display=st.per==='drill'?'':'none';
+    sel('f-drill',drills.map(d=>({v:d,l:d})),st.drill,v=>{st.drill=v;render();});
+  }
+  // metrics
+  const mc=document.getElementById('f-mets');
+  mc.innerHTML=MK.map(k=>`<button class="chk" data-k="${k}" aria-pressed="${st.mets.includes(k)}" title="${METRICS[k].label}${METRICS[k].note?' ('+METRICS[k].note+')':''}"><span class="sw" style="background:${METRICS[k].color}"></span>${METRICS[k].short}</button>`).join('');
+  mc.querySelectorAll('.chk').forEach(b=>b.onclick=()=>{const k=b.dataset.k; const on=st.mets.includes(k);
+    if(on&&st.mets.length===1) return; st.mets=on?st.mets.filter(x=>x!==k):MK.filter(x=>st.mets.includes(x)||x===k); render();});
+  seg('f-mm',MK.map(k=>({v:k,l:METRICS[k].short})),st.mm,v=>{st.mm=v;render();});
+  seg('f-mw',WINS.map(w=>({v:w,l:w+' min'})),st.mw,v=>{st.mw=+v;render();});
+  const sq=st.a==='squad', me=INFO[st.a]||{};
+  if(sq) st.bench='squad'; else if((st.bench==='position'&&!me.line)||(st.bench==='group'&&!me.group)) st.bench='squad';
+  seg('f-bench',[{v:'player',l:'Player',disabled:sq,title:'The selected player\'s own season average'},{v:'squad',l:'Squad'},
+    {v:'position',l:'Position',disabled:sq||!me.line},{v:'group',l:'Playing group',disabled:sq||!me.group}],st.bench,v=>{st.bench=v;render();});
+  const kind=kindOf(s);
+  document.getElementById('bench-hint').textContent=`Dashed horizontal lines: ${benchName()} per minute, across all ${kind==='Training'?'training sessions':kind.toLowerCase()+' matches'} this season, same period.${sq?' Pick a player to unlock player, position and playing-group benchmarks.':''}`;
+  seg('f-sort',['td','hsr','spr','vmax'].map(k=>({v:k,l:k==='vmax'?'Max speed':METRICS[k].short})),st.sort,v=>{st.sort=v;render();});
+  document.querySelectorAll('#f-sort button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===st.sort));
+  writeHash({a:st.a,g:st.sq==='Training'?'all':st.sq,sq:st.sq,opp:st.opp,d:s.d,t:s.type[0],per:st.per,drill:st.drill,mets:st.mets.join(','),mm:st.mm,mw:st.mw,bench:st.bench,sort:st.sort});
+}
+
+/* ============================================================================
+   CHARTS
+   ========================================================================== */
+function drawTime(s,R){
+  const mets=st.mets, m=mets.length, W=1040, H=380;
+  const L=54+(m>2?60:0), Rm=(m>1?60:18)+(m>3?60:0), T=30, B=30, G=118, XR=W-Rm-G;   // G = benchmark label gutter
+  // view window: included ranges plus 2 min either side
+  const pad=12, v0=Math.max(0,R[0][0]-pad), v1=Math.min(s.n-1,R[R.length-1][1]+pad), n=v1-v0+1;
+  const x=lin(v0,v1,L,XR);
+  const svg=svgIn('c-time',W,H,'Metric per minute over time');
+  const br=benchRates(s);
+  const rates={}; mets.forEach(k=>{ rates[k]=perMin(seriesFor(s,st.a,k)); });
+  // halves / half-time context
+  const Hh=halves(s);
+  if(s.type==='Match'&&Hh&&st.per==='full'){
+    svg.appendChild(S_('rect',{x:x(Hh.h1[1]),y:T,width:Math.max(0,x(Hh.h2[0])-x(Hh.h1[1])),height:H-T-B,fill:'#f4f2ed'}));
+    txt(svg,(x(Hh.h1[1])+x(Hh.h2[0]))/2,T+14,'half-time',{'text-anchor':'middle','font-size':10});
+  }
+  // grid from first metric
+  const scales={}; mets.forEach(k=>{ const vals=rates[k].slice(v0,v1+1).filter(v=>v!=null); const mx=niceMax(Math.max(1,...vals,br[k]||0)*1.08); scales[k]={mx,y:lin(0,mx,H-B,T)}; });
+  [0.25,0.5,0.75,1].forEach(f=>hline(svg,L,XR,scales[mets[0]].y(f*scales[mets[0]].mx)));
+  hline(svg,L,XR,H-B,{stroke:'#d9d5cc'});
+  // axes
+  mets.forEach((k,j)=>{ const left=j%2===0, off=Math.floor(j/2)*60, ax=left?L-off:XR+off, c=METRICS[k].color, sc=scales[k];
+    svg.appendChild(S_('line',{x1:ax,x2:ax,y1:T,y2:H-B,stroke:c,'stroke-opacity':m>1?.5:0}));
+    [0,.5,1].forEach(f=>txt(svg,ax+(left?-6:6),sc.y(f*sc.mx)+4,fmtK(f*sc.mx),{'text-anchor':left?'end':'start',fill:m>1?c:'#9a9ea6'}));
+    txt(svg,ax,T-10,METRICS[k].short,{'text-anchor':'middle',fill:c,'font-weight':600,'font-size':10.5}); });
+  // MDS window (the one accent area)
+  const mdsSeries=seriesFor(s,st.a,st.mm), M=mds(mdsSeries,R,st.mw);
+  if(M){ svg.appendChild(S_('rect',{x:x(M.a),y:T,width:Math.max(2,x(M.b+1)-x(M.a)),height:H-T-B,fill:'rgba(31,36,48,.08)',stroke:'#1f2430','stroke-opacity':.35,'stroke-dasharray':'3 3'}));
+    txt(svg,(x(M.a)+x(M.b+1))/2,H-B-8,`peak ${st.mw}-min ${METRICS[st.mm].short}`,{'text-anchor':'middle',fill:'#1f2430','font-weight':600,'font-size':10.5}); }
+  // half boundary dashed lines
+  if(s.type==='Match'&&Hh){ [[Hh.h1[0],'1st half'],[Hh.h1[1]+1,'HT'],[Hh.h2[0],'2nd half'],[Hh.h2[1]+1,'FT']].forEach(([b,l])=>{ if(b<v0||b>v1+1) return;
+    svg.appendChild(S_('line',{x1:x(b),x2:x(b),y1:T-4,y2:H-B,stroke:'#1a1c22','stroke-dasharray':'5 4','stroke-width':1.1}));
+    txt(svg,x(b)+4,T+2,l,{fill:'#1a1c22','font-size':10,'font-weight':600}); }); }
+  else if(st.per==='drill'){ R.forEach(([a,b])=>[a,b+1].forEach(bb=>svg.appendChild(S_('line',{x1:x(bb),x2:x(bb),y1:T,y2:H-B,stroke:'#1a1c22','stroke-dasharray':'5 4'})))); }
+  // benchmark lines (dashed, per metric colour)
+  // values sit in a gutter right of the plot (and its axes), nudged apart so they never overlap
+  const gx=W-G+10, labs=[];
+  mets.forEach(k=>{ const b=br[k]; if(b==null) return; const yy=scales[k].y(b);
+    svg.appendChild(S_('line',{x1:L,x2:XR,y1:yy,y2:yy,stroke:METRICS[k].color,'stroke-dasharray':'2 4','stroke-width':1.4,opacity:.9}));
+    labs.push({k,b,y0:yy,y:yy}); });
+  if(labs.length){
+    labs.sort((p,q)=>p.y0-q.y0);
+    for(let i=1;i<labs.length;i++) labs[i].y=Math.max(labs[i].y,labs[i-1].y+26);
+    const over=labs[labs.length-1].y-(H-B-6); if(over>0) labs.forEach(o=>o.y-=over);
+    for(let i=labs.length-2;i>=0;i--) labs[i].y=Math.min(labs[i].y,labs[i+1].y-26);
+    txt(svg,gx,T-10,'Benchmark /min',{'font-size':10,'font-weight':600,fill:'#6b7078'});
+    labs.forEach(o=>{ const c=METRICS[o.k].color;
+      svg.appendChild(S_('path',{d:`M${XR+(m>1?0:2)} ${o.y0} L${gx-14} ${o.y0} L${gx-4} ${o.y}`,fill:'none',stroke:c,'stroke-dasharray':'2 3','stroke-width':1,opacity:.8}));
+      txt(svg,gx,o.y+1,n1(o.b),{fill:c,'font-size':14,'font-weight':600,'font-family':'Sora, Inter, sans-serif'});
+      txt(svg,gx,o.y+13,`${METRICS[o.k].short} ${METRICS[o.k].unit}/min`,{fill:c,'font-size':9.5}); }); }
+  // lines: in-period solid, outside faded
+  // HSR / sprint / TAL as translucent areas (drawn first, behind); TD stays a solid line on top
+  const order=mets.filter(k=>k!=='td').concat(mets.includes('td')?['td']:[]);
+  order.forEach(k=>{ const vals=rates[k].map((v,i)=>i<v0||i>v1?null:v), c=METRICS[k].color, y=scales[k].y, area=k!=='td';
+    const inside=vals.map((v,i)=>inRanges(i,R)?v:null);
+    svg.appendChild(S_('path',{d:pathOf(vals,x,y),fill:'none',stroke:c,'stroke-width':1,opacity:.25}));
+    if(area){
+      svg.appendChild(S_('path',{d:areaOf(inside,x,y,H-B),fill:c,'fill-opacity':k==='tal'?(mets.length>2?.13:.2):(mets.length>2?.24:.28),stroke:'none'}));
+      svg.appendChild(S_('path',{d:pathOf(inside,x,y),fill:'none',stroke:c,'stroke-width':1.1,'stroke-linejoin':'round',opacity:.9}));
+    } else {
+      svg.appendChild(S_('path',{d:pathOf(inside,x,y),fill:'none',stroke:c,'stroke-width':2.2,'stroke-linejoin':'round'}));
+    } });
+  // time axis (clock), every 10 min
+  const bs=SB.bin_s||10, first=Math.ceil((s.start+v0*bs)/600)*600;
+  for(let t=first;t<=s.start+v1*bs;t+=600){ const b=(t-s.start)/bs; txt(svg,x(b),H-10,clockS(t),{'text-anchor':'middle'}); }
+  // hover
+  const cw=(XR-L)/n;
+  const hl=S_('line',{x1:0,x2:0,y1:T,y2:H-B,stroke:'#1a1c22','stroke-opacity':0}); svg.appendChild(hl);
+  const rect=S_('rect',{x:L,y:T,width:XR-L,height:H-T-B,fill:'transparent'}); svg.appendChild(rect);
+  rect.addEventListener('mousemove',e=>{ const pt=svg.getBoundingClientRect(), sx=(e.clientX-pt.left)*W/pt.width, i=Math.round(v0+(sx-L)/cw);
+    if(i<v0||i>v1) return; hl.setAttribute('x1',x(i)); hl.setAttribute('x2',x(i)); hl.setAttribute('stroke-opacity',.25);
+    let halfTxt=''; if(Hh){ if(inRanges(i,[Hh.h1])) halfTxt=` · 1st half ${Math.floor((i-Hh.h1[0])*bs/60)}'`; else if(inRanges(i,[Hh.h2])) halfTxt=` · 2nd half ${Math.floor((i-Hh.h2[0])*bs/60)}'`; }
+    tipShow(e,`<b>${clockS(s.start+i*bs)}</b>${halfTxt}<br>`+mets.map(k=>`<span style="color:${k==='td'?'#fff':METRICS[k].color}">■</span> ${METRICS[k].short} ${n1(rates[k][i])} ${METRICS[k].unit}/min`).join('<br>')); });
+  rect.addEventListener('mouseleave',()=>{hl.setAttribute('stroke-opacity',0);tipHide();});
+  document.getElementById('lg-time').innerHTML=mets.map(k=>`<span><i style="background:${METRICS[k].color}${k!=='td'?';height:9px;opacity:.55':''}"></i>${METRICS[k].label}${METRICS[k].note?' ('+METRICS[k].note+')':''} · ${METRICS[k].unit}/min</span>`).join('')
+    +`<span><i style="background:repeating-linear-gradient(90deg,#6b7078 0 3px,transparent 3px 6px)"></i>${benchName()}</span><span><i style="background:rgba(31,36,48,.14);border:1px dashed rgba(31,36,48,.5);height:8px"></i>peak ${st.mw}-min window</span>`;
+  return {M,rates,br};
+}
+
+function drawBars(s,R){
+  const cols=['td','hsr','spr','vmax'], lab={td:'Total distance (m)',hsr:'HSR (m)',spr:'Sprint (m)',vmax:'Max speed (m/s)'};
+  const col=k=>k==='vmax'?'#1a1c22':METRICS[k].color;
+  let rows=Object.entries(s.players).map(([a,pl])=>{ const o={a,min:totals(pl,'td',R).min}; ['td','hsr','spr'].forEach(k=>o[k]=totals(pl,k,R).sum); o.vmax=vmaxOf(pl,R); return o; }).filter(r=>r.min>=1);
+  rows.sort((p,q)=>q[st.sort]-p[st.sort]);
+  if(!rows.length){document.getElementById('c-bars').innerHTML='<div class="empty">No player data in this period.</div>';return null;}
+  const W=1040, lw=86, gap=22, rowH=19, T=26, H=T+rows.length*rowH+8, cw=(W-lw-gap*3)/4;
+  const svg=svgIn('c-bars',W,H,'Players by distance, HSR, sprint distance and max speed');
+  const avg={}; cols.forEach(k=>avg[k]=mean(rows.map(r=>r[k])));
+  cols.forEach((k,j)=>{ const x0=lw+j*(cw+gap), mx=niceMax(Math.max(...rows.map(r=>r[k]))*1.02), x=lin(0,mx,x0,x0+cw-40), on=k===st.sort;
+    const h=S_('text',{x:x0,y:14,'font-size':11.5,'font-family':FONT,'font-weight':600,fill:on?col(k):'#6b7078',class:'hit'},lab[k]+(on?' ▾':''));
+    h.addEventListener('click',()=>{st.sort=k;render();}); svg.appendChild(h);
+    rows.forEach((r,i)=>{ const yy=T+i*rowH, me=r.a===st.a;
+      svg.appendChild(S_('rect',{x:x0,y:yy+3,width:Math.max(1,x(r[k])-x0),height:rowH-6,rx:2,fill:me?'#e4571f':on?col(k):'#dcd7cc',opacity:me?1:on?.85:1}));
+      txt(svg,x(r[k])+4,yy+rowH-6,k==='vmax'?n1(r[k]):n0(r[k]),{'font-size':10,fill:me?'#c2410c':'#6b7078','font-weight':me?600:400}); });
+    svg.appendChild(S_('line',{x1:x(avg[k]),x2:x(avg[k]),y1:T-2,y2:H-6,stroke:'#1a1c22','stroke-dasharray':'3 3'}));
+  });
+  rows.forEach((r,i)=>{ const yy=T+i*rowH, me=r.a===st.a, g=S_('g',{class:'hit'});
+    g.appendChild(S_('rect',{x:0,y:yy,width:W,height:rowH,fill:me?'rgba(228,87,31,.06)':'transparent'}));
+    g.appendChild(S_('text',{x:lw-10,y:yy+rowH-6,'text-anchor':'end','font-size':11,'font-family':FONT,fill:me?'#c2410c':'#3d4048','font-weight':me?600:400},r.a));
+    g.appendChild(S_('text',{x:4,y:yy+rowH-6,'font-size':9.5,'font-family':FONT,fill:'#9a9ea6'},((INFO[r.a]||{}).line||'').replace('Half-','H-').replace('Full-','F-')));
+    hover(g,()=>`<b>${r.a}</b> · ${(INFO[r.a]||{}).line||'position unknown'} · ${n1(r.min)} min<br>TD ${n0(r.td)} m · HSR ${n0(r.hsr)} m<br>Sprint ${n0(r.spr)} m · max ${n1(r.vmax)} m/s<br><span style="opacity:.7">click to select</span>`);
+    g.addEventListener('click',()=>{tipHide();st.a=r.a;render();window.scrollTo({top:0,behavior:'smooth'});});
+    svg.insertBefore(g,svg.firstChild); });
+  return {rows,avg};
+}
+
+/* ============================================================================
+   RENDER + STORY
+   ========================================================================== */
+function render(){
+  buildControls();
+  if(st.s==null){ document.getElementById('headline').textContent='No sessions match these filters.'; return; }
+  const s=SB.sessions[st.s], R=ranges(s,st.per,st.drill);
+  const who=st.a==='squad'?'Squad average':st.a;
+  const perName=st.per==='1st'?'1st half':st.per==='2nd'?'2nd half':st.per==='drill'?st.drill:(s.type==='Match'&&halves(s)?'full game':'full session');
+  const T=drawTime(s,R), B=drawBars(s,R), br=T.br;
+  drawTable(s);
+
+  // selection totals (squad = mean of players with >=5 min)
+  const pls=st.a==='squad'?Object.values(s.players):[s.players[st.a]];
+  const agg={}; MK.forEach(k=>{ const v=pls.map(pl=>({t:totals(pl,k,R),pl})).filter(o=>o.t.min>=(st.a==='squad'?5:0.1)); agg[k]={sum:mean(v.map(o=>o.t.sum)), rate:mean(v.map(o=>o.t.sum/o.t.min))}; });
+  const mins=mean(pls.map(pl=>totals(pl,'td',R).min).filter(v=>v>=(st.a==='squad'?5:0)));
+  const vmx=st.a==='squad'?mean(pls.map(pl=>vmaxOf(pl,R)).filter(v=>v>0)):vmaxOf(s.players[st.a],R);
+
+  // KPIs: totals + rate vs benchmark
+  const vs=(r,b)=>{const p=pct(r,b); return p==null?'':` · ${`<span class="tag ${Math.abs(p)>=10?(p>0?'hi':''):'ok'}">${signed(p)}</span>`}`;};
+  const K=[{l:'Minutes',v:n1(mins),u:'min',f:perName}]
+    .concat(MK.map(k=>({l:METRICS[k].short,sw:METRICS[k].color,v:n0(agg[k].sum),u:METRICS[k].unit,f:`${n1(agg[k].rate)}/min${vs(agg[k].rate,br[k])}`})))
+    .concat([{l:'Max speed',v:n1(vmx),u:'m/s',f:`${n1(vmx*3.6)} km/h${vs(vmx,br.vmax)}`}]);
+  document.getElementById('kpis').innerHTML=K.map(o=>`<div class="kpi"><div class="k-label">${o.sw?`<span class="sw" style="background:${o.sw}"></span>`:''}${o.l}</div><div class="k-val">${o.v}<span class="k-unit">${o.u}</span></div><div class="k-foot">${o.f}</div></div>`).join('');
+  // titles
+  const p0=st.mets[0], r0=agg[p0].rate, b0=br[p0], d0=pct(r0,b0);
+  document.getElementById('h-time').textContent = d0==null ? `${who}: ${n1(r0)} ${METRICS[p0].unit}/min ${METRICS[p0].short} in the ${perName}`
+    : `${who} ran at ${n1(r0)} ${METRICS[p0].short === 'TAL' ? 'TAL' : METRICS[p0].unit}/min in the ${perName} — ${Math.abs(d0)}% ${d0>=0?'above':'below'} the ${benchName()}`;
+  document.getElementById('s-time').textContent=`${sessLabel(s)} · ${st.a==='squad'?'mean of players recording each 10 s':st.a} · rolling 1-min rate at 10-s resolution${s.type==='Match'&&halves(s)?' · dashed verticals = start/end of each half':''}`;
+  document.getElementById('h-bars').textContent = B ? `${B.rows[0].a} led the ${perName} for ${st.sort==='vmax'?'max speed':METRICS[st.sort].label.toLowerCase()}${st.a!=='squad'&&B.rows.findIndex(r=>r.a===st.a)>=0?` · ${st.a} ranked ${B.rows.findIndex(r=>r.a===st.a)+1} of ${B.rows.length}`:''}` : '';
+  document.getElementById('s-bars').textContent=`${B?B.rows.length:0} players · ${perName} totals · dashed = session average · click a column title or use the toggle to sort · click a row to select`;
+
+  // story
+  document.getElementById('eyebrow').textContent=`${sessLabel(s)} · ${perName}`;
+  document.getElementById('d-A').textContent=`${who} · ${perName} totals, rate per minute vs ${benchName()}`;
+  const M=T.M, mdsAvg=agg[st.mm].rate;
+  document.getElementById('headline').innerHTML = M
+    ? `${who}: hardest ${st.mw}-min ${METRICS[st.mm].short} was <em>${n1(M.rate)} ${METRICS[st.mm].unit}/min</em> at ${clockS(s.start+M.a*(SB.bin_s||10))} — ${(M.rate/(mdsAvg||1)).toFixed(1)}× the ${perName} average.`
+    : `${who}: no data in this period.`;
+  const bl=[];
+  const Hh=halves(s);
+  if(s.type==='Match'&&Hh&&st.per==='full'){ const pl1=pls.map(pl=>totals(pl,p0,[Hh.h1])).filter(t=>t.min>=3), pl2=pls.map(pl=>totals(pl,p0,[Hh.h2])).filter(t=>t.min>=3);
+    const r1=mean(pl1.map(t=>t.sum/t.min)), r2=mean(pl2.map(t=>t.sum/t.min)), d=pct(r2,r1);
+    if(pl1.length&&pl2.length) bl.push(`${METRICS[p0].short} rate ${d<0?'dropped':'rose'} ${Math.abs(d)}% from the 1st to the 2nd half (${n1(r1)} → ${n1(r2)} ${METRICS[p0].unit}/min).`); }
+  if(br.n) bl.push(`Benchmark: ${benchName()} is ${n1(br[p0])} ${METRICS[p0].unit}/min for ${METRICS[p0].short} (${br.n} player-${kindOf(s)==='Training'?'sessions':'matches'} this season, same period).`);
+  if(B&&st.a==='squad') bl.push(`${B.rows.length} players recorded; ${B.rows.slice().sort((p,q)=>q.hsr-p.hsr)[0].a} covered the most high-speed running (${n0(B.rows.slice().sort((p,q)=>q.hsr-p.hsr)[0].hsr)} m).`);
+  if(!halves(s)&&s.type==='Match') bl.push('No 1st/2nd-half markers in this export, so the full recording (incl. warm-up) is shown.');
+  document.getElementById('bullets').innerHTML=bl.map(b=>`<li>${b}</li>`).join('');
+  document.getElementById('foot').innerHTML=`Source: STATSports 10&nbsp;Hz exports, 'Entire Session' rows, binned to 10&nbsp;s by the pipeline. HSR &gt;5.5&nbsp;m/s; sprint &gt;7&nbsp;m/s. TAL (total acceleration load) follows Schelling et&nbsp;al. (2025): acceleration = difference between consecutive velocity samples, so TAL = Σ|Δv| over consecutive 10&nbsp;Hz Filtered Speed samples, in m·s⁻¹ (equivalent to ∫|a|&nbsp;dt). TAL per minute ÷ 60 = mean absolute acceleration in m·s⁻² (e.g. 21 m·s⁻¹/min ≈ 0.35 m·s⁻²). Values depend on sampling rate and filtering, so compare them within this system rather than against other devices. MDS = highest rolling ${st.mw}-min window inside the selected period (never across half-time). Benchmarks are season means per minute for the same session type and period. Players are pseudonymised (P-codes).${SB.MOCK?' <b style="color:#c2410c">Preview built on mock 10-s data — rerun the pipeline with the drive mounted.</b>':''}`;
+}
+
+/* ============================================================================
+   D. METRICS TABLE
+   ========================================================================== */
+const tb={per:null, line:'all', grp:'all', by:'player', sort:'td_tot', dir:-1};
+const TW=[1,2,3,5,10];
+function tableRanges(s){ const H=halves(s);
+  if(tb.per==='1st'&&H) return [H.h1]; if(tb.per==='2nd'&&H) return [H.h2];
+  if(tb.per==='drill'&&st.drill&&s.drills[st.drill]) return [s.drills[st.drill]];
+  return ranges(s,'full',''); }
+function tableRows(s){
+  const R=tableRanges(s), rows=[];
+  Object.entries(s.players).forEach(([a,pl])=>{ const i=INFO[a]||{};
+    if(tb.line!=='all'&&i.line!==tb.line) return; if(tb.grp!=='all'&&i.group!==tb.grp) return;
+    const t0=totals(pl,'td',R); if(t0.min<1) return;
+    const r={a, line:i.line||'—', grp:i.group||'—', min:t0.min, vmax:vmaxOf(pl,R)};
+    MK.forEach(k=>{ const t=totals(pl,k,R), v=raw(pl,k); r[k+'_tot']=t.sum; r[k+'_rate']=t.min?t.sum/t.min:null;
+      TW.forEach(w=>r[`${k}_m${w}`]=mdsRate(v,R,w)); });
+    rows.push(r); });
+  return rows; }
+function groupRows(rows,key){ const g={}; rows.forEach(r=>(g[r[key]]=g[r[key]]||[]).push(r));
+  return Object.entries(g).map(([name,rs])=>{ const o={a:name, n:rs.length, line:key==='line'?name:'', grp:key==='grp'?name:''};
+    Object.keys(rs[0]).forEach(c=>{ if(['a','line','grp'].includes(c)) return; const v=rs.map(r=>r[c]).filter(x=>x!=null); o[c]=v.length?mean(v):null; }); return o; }); }
+function tableCols(){ const unit={td:'m',hsr:'m',spr:'m',tal:'m·s⁻¹'};
+  const cols=[{c:'min',h:'Min',f:n1}];
+  MK.forEach(k=>{ cols.push({c:k+'_tot',h:`Total (${unit[k]})`,f:k==='tal'?n0:n0,g:k,first:true},{c:k+'_rate',h:'/min',f:n1,g:k});
+    TW.forEach(w=>cols.push({c:`${k}_m${w}`,h:`MDS ${w}′`,f:n1,g:k,mds:true})); });
+  cols.push({c:'vmax',h:'Max (m/s)',f:n1,g:'vmax',first:true});
+  return cols; }
+function drawTable(s){
+  const H=halves(s), isM=s.type==='Match';
+  if(tb.per==null) tb.per=(st.per==='drill'?'drill':(isM&&H?st.per:'full'));
+  if(!isM&&(tb.per==='1st'||tb.per==='2nd')) tb.per='full';
+  if(isM&&!H) tb.per='full';
+  seg('t-per',isM?[{v:'1st',l:'1st half',disabled:!H},{v:'2nd',l:'2nd half',disabled:!H},{v:'full',l:H?'Full game':'Full recording'}]
+                 :[{v:'full',l:'Full session'}].concat(st.per==='drill'&&st.drill?[{v:'drill',l:st.drill}]:[]),tb.per,v=>{tb.per=v;render();});
+  const hl=new Set(Object.keys(s.players).map(a=>(INFO[a]||{}).line).filter(Boolean)), hg=new Set(Object.keys(s.players).map(a=>(INFO[a]||{}).group).filter(Boolean));
+  sel('t-line',[{v:'all',l:'All positions'}].concat(LINES.filter(l=>hl.has(l)).map(l=>({v:l,l}))),tb.line,v=>{tb.line=v;render();});
+  sel('t-grp',[{v:'all',l:'All playing groups'}].concat(GROUPS.filter(g=>hg.has(g)).map(g=>({v:g,l:g}))),tb.grp,v=>{tb.grp=v;render();});
+  seg('t-by',[{v:'player',l:'Players'},{v:'line',l:'By position'},{v:'grp',l:'By playing group'}],tb.by,v=>{tb.by=v;render();});
+  let rows=tableRows(s); const all=rows;
+  if(tb.by!=='player') rows=groupRows(rows,tb.by);
+  const cols=tableCols(), sc=cols.find(c=>c.c===tb.sort)?tb.sort:'td_tot';
+  rows.sort((p,q)=>((q[sc]??-1e9)-(p[sc]??-1e9))*(-tb.dir));
+  // column maxima -> highlight the top value in each column (players view only)
+  const top={}; if(tb.by==='player'&&rows.length>2) cols.forEach(c=>{ const v=rows.map(r=>r[c.c]).filter(x=>x!=null); top[c.c]=Math.max(...v); });
+  const gName={td:'Total distance',hsr:'High-speed running (>5.5 m/s)',spr:'Sprint distance (>7 m/s)',tal:'TAL (Σ|Δv|)',vmax:'Speed'};
+  const lead=tb.by==='player'?[{c:'a',h:'Player'},{c:'line',h:'Position'},{c:'grp',h:'Playing group'}]:[{c:'a',h:tb.by==='line'?'Position':'Playing group'},{c:'n',h:'Players'}];
+  const g1=`<tr><th class="stk l" colspan="1"></th><th colspan="${lead.length-1+1}"></th>`+['td','hsr','spr','tal'].map(k=>`<th class="grp" colspan="7" style="color:${METRICS[k].color}">${gName[k]}</th>`).join('')+`<th class="grp">${gName.vmax}</th></tr>`;
+  const allCols=lead.concat(cols);
+  const g2='<tr>'+allCols.map((c,i)=>`<th data-c="${c.c}" class="${i===0?'stk l':''} ${i>0&&i<lead.length?'l':''} ${c.first?'gs':''} ${c.c===sc?'sorted':''}" title="${c.mds?'Most demanding '+c.h.replace('MDS ','')+' window, per minute':'Sort'}">${c.h}${c.c===sc?(tb.dir<0?' ▾':' ▴'):''}</th>`).join('')+'</tr>';
+  const fmtCell=(c,r)=>{ const v=r[c.c]; if(c.c==='a'||c.c==='line'||c.c==='grp') return v; if(c.c==='n') return v; return v==null?'<span class="muted">—</span>':(c.f||n1)(v); };
+  const body=rows.map(r=>`<tr data-a="${r.a}" class="${r.a===st.a?'me':''}">`+allCols.map((c,i)=>`<td class="${i===0?'stk l':''} ${i>0&&i<lead.length?'l':''} ${c.first?'gs':''} ${top[c.c]!=null&&r[c.c]===top[c.c]?'top':''}">${fmtCell(c,r)}</td>`).join('')+'</tr>').join('');
+  // footer: mean of the rows shown (players view) / of all players (grouped view)
+  const avg={}; cols.forEach(c=>{ const v=all.map(r=>r[c.c]).filter(x=>x!=null); avg[c.c]=v.length?mean(v):null; });
+  const foot=`<tr>`+allCols.map((c,i)=>`<td class="${i===0?'stk l':''} ${i>0&&i<lead.length?'l':''} ${c.first?'gs':''}">${i===0?'Mean':i<lead.length?(i===1&&tb.by!=='player'?all.length:''):avg[c.c]==null?'—':(c.f||n1)(avg[c.c])}</td>`).join('')+'</tr>';
+  const el=document.getElementById('mtable');
+  el.innerHTML=`<thead>${g1}${g2}</thead><tbody>${body||`<tr><td class="l" colspan="${allCols.length}">No players match these filters.</td></tr>`}</tbody><tfoot>${foot}</tfoot>`;
+  el.querySelectorAll('thead tr:nth-child(2) th').forEach(th=>th.onclick=()=>{ const c=th.dataset.c; if(['a','line','grp'].includes(c)) return;
+    if(tb.sort===c) tb.dir*=-1; else {tb.sort=c; tb.dir=-1;} render(); });
+  if(tb.by==='player') el.querySelectorAll('tbody tr[data-a]').forEach(tr=>tr.onclick=()=>{ st.a=tr.dataset.a; render(); window.scrollTo({top:0,behavior:'smooth'}); });
+  // titles
+  const perName=tb.per==='1st'?'1st half':tb.per==='2nd'?'2nd half':tb.per==='drill'?st.drill:(isM&&H?'full game':'full session');
+  const best=all.length?all.reduce((p,q)=>(q.td_m3||0)>(p.td_m3||0)?q:p):null;
+  document.getElementById('h-tbl').textContent = best ? `${best.a} produced the hardest 3-min TD of the ${perName}: ${n1(best.td_m3)} m/min` : 'No player data for this period';
+  document.getElementById('s-tbl').textContent = `${sessLabel(s)} · ${perName} · ${all.length} players${tb.line!=='all'?' · '+tb.line:''}${tb.grp!=='all'?' · '+tb.grp:''} · MDS = highest rolling window, per minute, never across half-time · click a header to sort${tb.by==='player'?', a row to select the player':''} · top value per column underlined`;
+  // CSV
+  document.getElementById('t-csv').onclick=()=>{ const hdr=allCols.map(c=>c.g&&gName[c.g]&&c.c!=='vmax'?`${METRICS[c.g]?METRICS[c.g].short:c.g} ${c.h}`:c.h);
+    const lines=[hdr.join(',')].concat(rows.map(r=>allCols.map(c=>{const v=r[c.c]; return v==null?'':typeof v==='number'?(Math.round(v*10)/10):`"${String(v).replace(/"/g,'""')}"`;}).join(',')));
+    const blob=new Blob([lines.join('\n')],{type:'text/csv'}), a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=`metrics_${s.d}_${perName.replace(/\s+/g,'-')}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); };
+}
+
+function init(){
+  if(!Q||!SB){ document.querySelector('.main').innerHTML='<div class="empty">No session data found. Run <code>python run.py</code> (with the data drive mounted) to create <code>outputs/session_bins.js</code>.</div>'; return; }
+  const h=readHash();
+  if(h.sq) st.sq=h.sq; else if(h.g&&['Senior','Reserve'].includes(h.g)) st.sq=h.g;
+  if(h.opp) st.opp=h.opp; if(h.a) st.a=h.a;
+  if(h.d){ const i=SB.sessions.findIndex(s=>s.d===h.d&&(!h.t||s.type[0]===h.t)); if(i>=0) st.s=i; }
+  if(h.per) st.per=h.per; if(h.drill) st.drill=h.drill;
+  if(h.mets){ const m=h.mets.split(',').filter(k=>MK.includes(k)); if(m.length) st.mets=m; }
+  if(MK.includes(h.mm)) st.mm=h.mm; if(WINS.includes(+h.mw)) st.mw=+h.mw;
+  if(['player','squad','position','group'].includes(h.bench)) st.bench=h.bench;
+  if(['td','hsr','spr','vmax'].includes(h.sort)) st.sort=h.sort;
+  render();
+}
+gate(init);
+</script>
+</body>
+</html>

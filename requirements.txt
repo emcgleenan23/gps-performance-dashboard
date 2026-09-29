@@ -1,0 +1,7 @@
+numpy>=1.24
+polars>=1.25       # data engine (lazy CSV scans, parquet cache) - replaces pandas
+pyyaml>=6.0
+cryptography>=42  # publish.py: AES-256-GCM encryption of the shareable dashboard
+# optional, enable stronger methods:
+# ruptures>=1.1     # Schelling-aligned changepoint detection (PELT)
+scipy>=1.10       # sample-data generator (scripts/make_sample_data.py)

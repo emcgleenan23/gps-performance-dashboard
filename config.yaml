@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# GPS performance pipeline - configuration
+# Out of the box this points at the synthetic sample squad made by
+# `python scripts/make_sample_data.py`. To use your own exports, point
+# `data.root` at a folder of STATSports 10 Hz CSVs (or set GPS_DATA_ROOT).
+# ---------------------------------------------------------------------------
+data:
+  root: "sample_data/raw"    # folder of YYYY-MM-DD-<Team>-<Match|Training>.csv exports
+  source: "statsports"       # "statsports" (raw exports) | "synthetic" (single-athlete toy series)
+  athlete: "squad"           # "squad" (mean of players present) | "P03" | display name
+  match: "latest"            # match used for the per-minute / MDS panel: "latest" | "YYYY-MM-DD"
+
+reference:                   # squad context joined in by player name / date (git-ignored: contains names)
+  season_index: "sample_data/reference/season_index.csv"          # Date, Competition, Opposition, Grade
+  player_categories: "sample_data/reference/player_categories.csv" # player, position_line, category, new_rule_category, specific_position
+  positions: "sample_data/reference/positions.csv"                 # fallback: Player Display Name, Position Line
+
+sampling:
+  input_hz: 10               # STATSports Apex native
+  analysis_hz: 5             # downsample target (Schelling: 5 Hz preserves smoothed velocity)
+
+conditioning:
+  velocity_window_s: 0.4     # +/-0.2 s centred displacement (Schelling Formula 1)
+  daily_smooth_days: 7       # rolling mean for the load series
+  daily_ewma_alpha: 0.3      # EWMA weighting
+  vmax_ms: 10.5              # speeds above this are GPS artefacts (set to NaN)
+
+features:
+  acwr_acute_days: 7
+  acwr_chronic_days: 28
+
+mds:
+  windows_min: [1, 2, 3, 4, 5]      # Gaelic football duration-specific worst-case (per-minute)
+  changepoint_min_segment_s: 25     # possession-scale floor - CALIBRATE from your match data
+  changepoint_penalty: 0.05
+
+periodisation:
+  wavelet_w0: 6
+  periods_days: [2, 3, 5, 7, 10, 14, 21, 28]
+
+output:
+  dir: "outputs"

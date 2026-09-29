@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Load Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span><div><div class="title">Senior Football — Performance</div><div class="sub">STATSports GPS</div></div></div>
+    <nav class="tabs" aria-label="Pages">
+      <a href="index.html" data-page="index.html">Session analysis</a>
+      <a href="load.html" data-page="load.html" aria-current="page">Load monitoring</a>
+    </nav>
+    <span class="badge">Pipeline output</span>
+  </header>
+
+  <div class="shell">
+    <aside class="side" aria-label="Filters">
+      <section>
+        <h3><span class="n">1</span>Team / player</h3>
+        <div class="fld"><span class="lbl">Squad</span><div class="seg" id="f-sq" role="group" aria-label="Squad"></div></div>
+        <div class="fld"><label for="f-a">Player</label><select id="f-a"></select></div>
+        <div class="fld"><label for="f-line">Position</label><select id="f-line"></select></div>
+        <div class="fld"><label for="f-grp">Playing group</label><select id="f-grp"></select></div>
+        <div class="fld"><span class="lbl">Date range</span>
+          <div class="dates"><input type="date" id="f-from" aria-label="From"><input type="date" id="f-to" aria-label="To"></div>
+          <div class="chips"><button class="chip" data-w="4">Last 4 wks</button><button class="chip" data-w="8">Last 8 wks</button><button class="chip" data-w="0">Season</button></div></div>
+        <div class="hint">Players who play both grades sit in both squads; their load always includes every session.</div>
+      </section>
+      <section>
+        <h3><span class="n">2</span>Physical metric</h3>
+        <div class="seg" id="f-m" role="group" aria-label="Load metric"></div>
+        <div class="hint" id="m-hint"></div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <div class="sec"><span class="l">A</span><span class="t">Load summary</span><span class="d" id="d-A"></span><span class="rule"></span></div>
+      <section class="story" aria-live="polite"><div class="eyebrow" id="eyebrow"></div><h1 id="headline"></h1><ul id="bullets"></ul></section>
+      <section class="kpis" id="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))"></section>
+
+      <div class="sec"><span class="l">B</span><span class="t">Changepoint detection</span><span class="d">abrupt shifts in the 7-day load · Schelling et al. (2025)</span><span class="rule"></span></div>
+      <div class="panel">
+        <div class="p-head"><div><h2 id="h-F"></h2><p class="p-sub" id="s-F"></p></div>
+          <div class="toggle" id="f-scn" role="group" aria-label="Data"></div></div>
+        <div id="c-F"></div>
+        <div class="legend"><span><i style="background:#c9cdd3"></i>raw daily load</span><span><i style="background:#e4571f"></i>7-day avg, block above season mean</span>
+          <span><i style="background:#2b6a72"></i>7-day avg, block below season mean</span><span><i style="background:#111318;width:2px;height:10px"></i>changepoint</span>
+          <span><i style="background:#e4571f;width:7px;height:7px;border-radius:50%"></i>spike (&gt; mean + 1 SD) — hover for date</span></div>
+      </div>
+
+      <div class="sec"><span class="l">C</span><span class="t">Time-series toolkit</span><span class="d">supporting views of the same series as B</span><span class="rule"></span></div>
+      <div class="minis">
+        <div class="mini"><div class="mt"><b>C1</b>Raw daily load</div><div class="ms">Every session and rest day</div><div id="c-A"></div></div>
+        <div class="mini"><div class="mt"><b>C2</b>Smoothing</div><div class="ms">7-day MA (dark) vs EWMA α 0.3 (orange)</div><div id="c-B"></div></div>
+        <div class="mini"><div class="mt"><b>C3</b>Power spectrum</div><div class="ms">Dominant cycle lengths · 7 d marked</div><div id="c-C"></div></div>
+        <div class="mini"><div class="mt"><b>C4</b>Wavelet</div><div class="ms">Rhythm strength over time</div><div id="c-D"></div></div>
+        <div class="mini"><div class="mt"><b>C5</b>Forecast</div><div class="ms">Holt-Winters, 28 d, 95% band</div><div id="c-E"></div></div>
+      </div>
+
+      <div class="row2">
+        <div><div class="sec"><span class="l">D</span><span class="t">Daily load</span><span class="rule"></span></div>
+          <div class="panel"><h2 id="h-load"></h2><p class="p-sub" id="s-load"></p><div id="c-load"></div></div></div>
+        <div><div class="sec"><span class="l">E</span><span class="t">Acute : chronic workload</span><span class="rule"></span></div>
+          <div class="panel"><h2 id="h-acwr"></h2><p class="p-sub">Acute (7-day) ÷ chronic (28-day) · <span style="color:var(--ok)">target band 0.8–1.3</span></p><div id="c-acwr"></div></div></div>
+      </div>
+      <p class="foot" id="foot"></p>
+    </main>
+  </div>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script src="../outputs/dashboard_data.js"></script>
+<script src="common.js"></script>
+<script>
+/* ============================================================================
+   LOAD MONITORING — daily load, ACWR and the Schelling et al. (2025) time-series toolkit
+   ========================================================================== */
+const st={sq:'all', a:'squad', line:'all', grp:'all', from:null, to:null, m:'td', scn:'real'};
+let S=[], CAL=[], SEASON=[null,null];
+
+function prepare(){
+  const s=Q.sessions;
+  S=s.a.map((a,i)=>({ath:Q.athletes[a], d:s.d[i], t:s.t[i], td:s.dist[i], hsr:s.hsr[i], spr:s.spr[i], tal:(s.tal||[])[i]}));
+  const ds=S.map(r=>r.d).sort(); SEASON=[ds[0],ds[ds.length-1]];
+  CAL=[]; for(let d=SEASON[0]; d<=SEASON[1]; d=addDays(d,1)) CAL.push(d);
+}
+const hasTAL=()=>S.some(r=>r.tal>0);
+function inPool(a){
+  if(st.sq!=='all'&&!(GR[a]&&GR[a].has(st.sq))) return false;
+  const i=INFO[a]||{};
+  if(st.line!=='all'&&i.line!==st.line) return false;
+  if(st.grp!=='all'&&i.group!==st.grp) return false;
+  return true;
+}
+function who(){ if(st.a!=='squad') return st.a;
+  const bits=[st.sq==='all'?'Squad':st.sq+' squad']; if(st.line!=='all') bits.push(st.line); if(st.grp!=='all') bits.push(st.grp);
+  return bits.join(' · ')+' average'; }
+/* full-season daily series (so the 28-day chronic window is never truncated by the view) */
+function daily(){
+  const k=st.m, per={}, mday={};
+  S.forEach(r=>{ if(r.t==='M') mday[r.d]=gradeOf(r.d)||'Match'; });
+  S.forEach(r=>{ if(st.a==='squad'?!inPool(r.ath):r.ath!==st.a) return; (per[r.d]=per[r.d]||{}); per[r.d][r.ath]=(per[r.d][r.ath]||0)+(r[k]||0); });
+  const load=CAL.map(d=>per[d]?(st.a==='squad'?mean(Object.values(per[d])):per[d][st.a]||0):0);
+  const had=CAL.map(d=>!!per[d]);
+  const roll=w=>load.map((_,i)=>mean(load.slice(Math.max(0,i-w+1),i+1)));
+  const a7=roll(7), c28=roll(28);
+  return {load,had,ma7:a7,acwr:a7.map((a,i)=>c28[i]>0?a/c28[i]:null),mday:CAL.map(d=>mday[d]||'')};
+}
+const idxOf=d=>Math.max(0,Math.min(CAL.length-1,Math.round((Date.parse(d)-Date.parse(CAL[0]))/DAY)));
+
+/* ---------- time-series toolkit (as wavelet.html) ---------- */
+function makeRnd(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gaussFrom(rnd){return(m,s)=>{let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};}
+function generate(scn,N=182){ const wf=[0.22,0.10,1.00,0.85,0.60,0.28,1.28];
+  const rnd=makeRnd(scn==='good'?101:202), gauss=gaussFrom(rnd), load=[];
+  if(scn==='good'){ const block=[0.92,1.00,1.12,0.60];
+    for(let i=0;i<N;i++){const wk=Math.floor(i/7),dow=i%7,prog=1+0.06*(wk/26); load.push(Math.max(0,Math.round((dow===6?790:640*wf[dow])*block[wk%4]*prog+gauss(0,16))));}
+  }else{ for(let i=0;i<N;i++){const r=rnd(); load.push(Math.max(0,Math.round(r<0.16?gauss(70,45):r<0.30?gauss(940,150):gauss(430,240))));}
+    for(let i=20;i<24;i++) load[i]=Math.round(Math.abs(gauss(15,15))); for(let i=90;i<95;i++) load[i]=Math.round(Math.abs(gauss(15,15)));
+    for(let i=48;i<51;i++) load[i]=Math.round(gauss(1060,60)); for(let i=120;i<123;i++) load[i]=Math.round(gauss(1010,60)); }
+  return load; }
+const roll=(a,w)=>a.map((_,i)=>mean(a.slice(Math.max(0,i-w+1),i+1)));
+function ewma(a,al){let e=a[0];return a.map((v,i)=>{e=i?al*v+(1-al)*e:v;return e;});}
+function psd(xz){const n=xz.length,out=[];for(let p=2;p<=Math.min(60,Math.floor(n/2));p++){const w=2*Math.PI/p;let re=0,im=0;for(let t=0;t<n;t++){re+=xz[t]*Math.cos(w*t);im+=xz[t]*Math.sin(w*t);}out.push({p,power:(re*re+im*im)/n});}return out;}
+function holtWinters(y,m,al,be,ga,h){const n=y.length;let level=mean(y.slice(0,m)),trend=(mean(y.slice(m,2*m))-mean(y.slice(0,m)))/m;
+  const seas=[];for(let i=0;i<m;i++)seas[i]=y[i]-level;const resid=[];
+  for(let t=0;t<n;t++){const s=seas[t%m],lp=level;resid.push(y[t]-(level+trend+s));level=al*(y[t]-s)+(1-al)*(level+trend);trend=be*(level-lp)+(1-be)*trend;seas[t%m]=ga*(y[t]-level)+(1-ga)*s;}
+  const sd=Math.sqrt(mean(resid.map(r=>r*r))),fc=[],lo=[],hi=[];
+  for(let k=1;k<=h;k++){const f=level+k*trend+seas[(n+k-1)%m],band=1.96*sd*Math.sqrt(k);fc.push(Math.max(0,f));lo.push(Math.max(0,f-band));hi.push(f+band);}
+  return {fc,lo,hi};}
+function cost(a){const m=mean(a);let s=0;for(const x of a)s+=(x-m)*(x-m);return s;}
+function binseg(series,minLen,pen,maxK){const cps=[];
+  (function rec(lo,hi){if(hi-lo<2*minLen||cps.length>=maxK)return;let best=Infinity,bi=-1;
+    for(let i=lo+minLen;i<=hi-minLen;i++){const c=cost(series.slice(lo,i))+cost(series.slice(i,hi));if(c<best){best=c;bi=i;}}
+    if(cost(series.slice(lo,hi))-best>pen&&bi>0){cps.push(bi);rec(lo,bi);rec(bi,hi);}})(0,series.length);
+  return cps.sort((a,b)=>a-b);}
+const w0=6,CONV=(w0+Math.sqrt(2+w0*w0))/(4*Math.PI),PI_M14=Math.pow(Math.PI,-0.25);
+function coef(xz,period,b){const N=xz.length,s=period*CONV,half=Math.ceil(4*s),norm=1/Math.sqrt(s);let re=0,im=0;
+  for(let t=Math.max(0,b-half);t<=Math.min(N-1,b+half);t++){const tau=(t-b)/s,env=Math.exp(-tau*tau/2)*PI_M14;re+=xz[t]*env*Math.cos(w0*tau);im+=xz[t]*env*(-Math.sin(w0*tau));}
+  return norm*Math.hypot(re,im);}
+const mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
+
+/* ---------- F: changepoints (feature panel) ---------- */
+function drawF(L,dates,unit){
+  const N=L.length, W=1040, H=320, m={l:50,r:18,t:34,b:28};
+  const svg=svgIn('c-F',W,H,'Changepoint detection');
+  const sm=roll(L,7), cps=binseg(sm,Math.min(16,Math.floor(N/4)),0.05*cost(sm),4);
+  const mx=niceMax(Math.max(...L,1)*1.05), X=d=>m.l+d/(N-1)*(W-m.l-m.r), Y=lin(0,mx,H-m.b,m.t);
+  [0,.25,.5,.75,1].forEach(f=>{hline(svg,m.l,W-m.r,Y(f*mx)); txt(svg,m.l-6,Y(f*mx)+4,fmtK(f*mx),{'text-anchor':'end'});});
+  const step=Math.max(1,Math.round(N/9)); for(let i=0;i<N;i+=step) txt(svg,X(i),H-9,fmtD(dates[i]),{'text-anchor':'middle'});
+  svg.appendChild(S_('path',{d:pathOf(L,X,Y),fill:'none',stroke:'#c9cdd3','stroke-width':1.1}));
+  const bounds=[0,...cps,N], mu=mean(sm), segs=[];
+  for(let k=0;k<bounds.length-1;k++){const a=bounds[k],b=bounds[k+1];segs.push({a,b,mean:mean(L.slice(a,b))});}
+  segs.forEach(s=>{ const c=s.mean>=mu?'#e4571f':'#2b6a72', seg=sm.map((v,i)=>i>=s.a&&i<=Math.min(s.b,N-1)?v:null);
+    svg.appendChild(S_('path',{d:pathOf(seg,X,Y),fill:'none',stroke:c,'stroke-width':2.6,'stroke-linejoin':'round'}));
+    svg.appendChild(S_('line',{x1:X(s.a),x2:X(Math.min(s.b,N-1)),y1:Y(s.mean),y2:Y(s.mean),stroke:c,'stroke-dasharray':'4 4',opacity:.8})); });
+  cps.forEach((i,k)=>{ const ch=pct(segs[k+1].mean,segs[k].mean);
+    svg.appendChild(S_('line',{x1:X(i),x2:X(i),y1:m.t-6,y2:H-m.b,stroke:'#111318','stroke-width':1.6}));
+    txt(svg,X(i),m.t-12,`${fmtD(dates[i])} · ${signed(ch)}`,{'text-anchor':'middle',fill:'#111318','font-weight':600,'font-size':11}); });
+  const lm=mean(L), sd=Math.sqrt(mean(L.map(v=>(v-lm)**2))), thr=lm+sd;
+  const spikes=L.map((v,i)=>({v,i})).filter(o=>o.v>thr&&(o.i===0||o.v>=L[o.i-1])&&(o.i===N-1||o.v>=L[o.i+1]));
+  const segOf=i=>segs.find(s=>i>=s.a&&i<s.b)||segs[segs.length-1];
+  const tip=i=>{const d=dates[i]; return `<b>${fmtDL(d)}</b>${st.scn==='real'&&FIX[d]?' · '+fixLabel(d):''}<br>daily ${n0(L[i])} ${unit} · 7-day ${n0(sm[i])}<br>block mean ${n0(segOf(i).mean)}${L[i]>thr?'<br><span style="color:#f4a47f">spike: &gt; mean + 1 SD</span>':''}`;};
+  const hw=(W-m.l-m.r)/N;
+  for(let i=0;i<N;i++){const r=S_('rect',{x:X(i)-hw/2,y:m.t,width:hw,height:H-m.b-m.t,fill:'transparent'}); hover(r,()=>tip(i)); svg.appendChild(r);}
+  spikes.forEach(o=>{const c=S_('circle',{cx:X(o.i),cy:Y(o.v),r:4.2,fill:'#e4571f',stroke:'#fff','stroke-width':1.2,class:'hit'}); hover(c,()=>tip(o.i)); svg.appendChild(c);});
+  return {cps,segs,spikes};
+}
+/* ---------- A–E: supplementary minis ---------- */
+const MW=250, MH=150, mm={l:28,r:6,t:8,b:18};
+function miniFrame(id,L,label){ const svg=svgIn(id,MW,MH,label), N=L.length; return {svg,N,X:d=>mm.l+d/(Math.max(1,N-1))*(MW-mm.l-mm.r)}; }
+function miniY(svg,mx){ const Y=lin(0,mx,MH-mm.b,mm.t); [0,mx].forEach(t=>{hline(svg,mm.l,MW-mm.r,Y(t)); txt(svg,mm.l-4,Y(t)+3,fmtK(t),{'text-anchor':'end','font-size':9});}); return Y; }
+function miniDates(svg,X,dates){ [0,Math.floor((dates.length-1)/2),dates.length-1].forEach((i,k)=>txt(svg,X(i),MH-5,fmtD(dates[i]),{'text-anchor':['start','middle','end'][k],'font-size':9})); }
+function drawMinis(L,dates){
+  const mx=niceMax(Math.max(...L,1)*1.05);
+  { const {svg,X}=miniFrame('c-A',L,'Raw'); const Y=miniY(svg,mx); miniDates(svg,X,dates); svg.appendChild(S_('path',{d:pathOf(L,X,Y),fill:'none',stroke:'#31343c','stroke-width':1})); }
+  { const {svg,X}=miniFrame('c-B',L,'Smoothing'); const Y=miniY(svg,mx); miniDates(svg,X,dates);
+    svg.appendChild(S_('path',{d:pathOf(L,X,Y),fill:'none',stroke:'#d5d8dd','stroke-width':.9}));
+    svg.appendChild(S_('path',{d:pathOf(roll(L,7),X,Y),fill:'none',stroke:'#31343c','stroke-width':1.6}));
+    svg.appendChild(S_('path',{d:pathOf(ewma(L,0.3),X,Y),fill:'none',stroke:'#e4571f','stroke-width':1.4})); }
+  const mu=mean(L), xz=L.map(v=>v-mu), P=psd(xz);
+  { const svg=svgIn('c-C',MW,MH,'Power spectrum'); if(P.length){ const pm=Math.max(...P.map(o=>o.power))*1.08, pmax=P.reduce((a,b)=>b.power>a.power?b:a), pM=P[P.length-1].p;
+      const X=p=>mm.l+(p-2)/(pM-2||1)*(MW-mm.l-mm.r), Y=v=>(MH-mm.b)-v/pm*(MH-mm.b-mm.t);
+      hline(svg,mm.l,MW-mm.r,MH-mm.b);
+      P.forEach(o=>{ const on=o.p===pmax.p, l=S_('line',{x1:X(o.p),x2:X(o.p),y1:MH-mm.b,y2:Y(o.power),stroke:on?'#111318':'#c9cdd3','stroke-width':on?2.4:1.4}); svg.appendChild(l);
+        const r=S_('rect',{x:X(o.p)-3,y:mm.t,width:6,height:MH-mm.t-mm.b,fill:'transparent'}); hover(r,`${o.p}-day cycle${on?' (dominant)':''}`); svg.appendChild(r); });
+      [2,7,14,30,60].filter(p=>p<=pM).forEach(p=>txt(svg,X(p),MH-5,p+'d',{'text-anchor':'middle','font-size':9,fill:p===7?'#c2410c':'#9a9ea6'}));
+      txt(svg,X(pmax.p)+4,mm.t+10,`peak ${pmax.p} d`,{'font-size':9.5,fill:'#111318','font-weight':600}); } }
+  { const svg=svgIn('c-D',MW,MH,'Wavelet'), N=L.length, PER=[28,21,14,10,7,5,3,2], COLS=Math.min(26,N), cd=N/COLS; let mag=PER.map(()=>[]),maxM=0;
+    for(let r=0;r<PER.length;r++)for(let c=0;c<COLS;c++){const v=coef(xz,PER[r],Math.round(c*cd+cd/2));mag[r][c]=v;if(v>maxM)maxM=v;}
+    const gh=MH-mm.b-mm.t, rh=gh/PER.length, cw=(MW-mm.l-mm.r)/COLS, LOW=[239,236,228],HIGH=[32,34,39],BG=[255,255,255];
+    for(let r=0;r<PER.length;r++){ if(r%2===0) txt(svg,mm.l-4,mm.t+r*rh+rh/2+3,PER[r]+'d',{'text-anchor':'end','font-size':8.5});
+      for(let c=0;c<COLS;c++){ const ctr=c*cd+cd/2, ef=Math.SQRT2*PER[r]*CONV, coi=ctr<ef||ctr>(N-1-ef); let col=mix(LOW,HIGH,Math.pow(mag[r][c]/(maxM||1),0.6)); if(coi)col=mix(col,BG,.72);
+        const rc=S_('rect',{x:mm.l+c*cw+.5,y:mm.t+r*rh+.5,width:cw-1,height:rh-1,rx:1,fill:`rgb(${col})`}); hover(rc,`${PER[r]}-day rhythm around ${fmtD(dates[Math.min(N-1,Math.round(ctr))])}${coi?' (edge: low confidence)':''}`); svg.appendChild(rc); } }
+    miniDates(svg,i=>mm.l+i/(N-1)*(MW-mm.l-mm.r),dates); }
+  { const svg=svgIn('c-E',MW,MH,'Forecast'), N=L.length, h=28, {fc,lo,hi}=holtWinters(L,7,.3,.05,.3,h), T=N-1+h;
+    const top=niceMax(Math.min(Math.max(...L,...hi),Math.max(...L)*1.6)*1.05), X=d=>mm.l+d/T*(MW-mm.l-mm.r), Y=lin(0,top,MH-mm.b,mm.t), cl=v=>Math.min(v,top);
+    [0,top].forEach(t=>{hline(svg,mm.l,MW-mm.r,Y(t)); txt(svg,mm.l-4,Y(t)+3,fmtK(t),{'text-anchor':'end','font-size':9});});
+    let d='M'+X(N-1)+' '+Y(L[N-1]); for(let k=1;k<=h;k++) d+=' L'+X(N-1+k)+' '+Y(cl(hi[k-1])); for(let k=h;k>=1;k--) d+=' L'+X(N-1+k)+' '+Y(lo[k-1]); d+=' Z';
+    svg.appendChild(S_('path',{d,fill:'#f3d9cb',opacity:.8}));
+    svg.appendChild(S_('path',{d:pathOf(L,X,Y),fill:'none',stroke:'#31343c','stroke-width':1}));
+    svg.appendChild(S_('path',{d:pathOf([...new Array(N-1).fill(null),L[N-1],...fc],X,Y),fill:'none',stroke:'#e4571f','stroke-width':1.4,'stroke-dasharray':'4 3'}));
+    txt(svg,X(0),MH-5,fmtD(dates[0]),{'font-size':9}); txt(svg,X(T),MH-5,'+28 d',{'text-anchor':'end','font-size':9}); }
+  return {P};
+}
+
+/* ---------- daily load (bars) + ACWR, always real data ---------- */
+function drawLoad(ser,i0,i1){
+  const W=720,H=300,L=46,R=70,T=16,B=28, M=METRICS[st.m];
+  const svg=svgIn('c-load',W,H,'Daily load'); const n=i1-i0+1, vals=ser.load.slice(i0,i1+1), ma=ser.ma7.slice(i0,i1+1);
+  const mx=niceMax(Math.max(...vals,...ma,1)*1.05), x=lin(0,Math.max(1,n-1),L+6,W-R-6), y=lin(0,mx,H-B,T);
+  [0,.5,1].forEach(f=>{hline(svg,L,W-R,y(f*mx)); txt(svg,L-6,y(f*mx)+4,fmtK(f*mx),{'text-anchor':'end'});});
+  const bw=Math.max(2,Math.min(14,(W-L-R)/n*.72));
+  vals.forEach((v,k)=>{ if(v<=0)return; const g=ser.mday[i0+k]; svg.appendChild(S_('rect',{x:x(k)-bw/2,y:y(v),width:bw,height:(H-B)-y(v),rx:1.5,fill:!g?'#dcd7cc':g==='Reserve'?'#2b6a72':'#3a3d45'})); });
+  svg.appendChild(S_('path',{d:pathOf(ma,x,y),fill:'none',stroke:'#e4571f','stroke-width':2.4,'stroke-linejoin':'round'}));
+  txt(svg,x(n-1)+8,y(ma[n-1])+4,'7-day avg',{fill:'#c2410c','font-weight':600}); txt(svg,x(n-1)+8,y(ma[n-1])+18,fmtK(ma[n-1])+' '+M.unit,{fill:'#c2410c'});
+  const step=Math.max(1,Math.ceil(n/6)); for(let k=0;k<n;k+=step) txt(svg,x(k),H-8,fmtD(CAL[i0+k]),{'text-anchor':'middle'});
+  const hw=(W-L-R)/n; for(let k=0;k<n;k++){ const i=i0+k, r=S_('rect',{x:x(k)-hw/2,y:T,width:hw,height:H-B-T,fill:'transparent'});
+    hover(r,()=>`<b>${fmtDL(CAL[i])}</b>${ser.mday[i]?' · '+(fixLabel(CAL[i])||'match'):''}<br>${ser.had[i]?n0(ser.load[i])+' '+M.unit:'no session'}<br>7-day avg ${n0(ser.ma7[i])} ${M.unit}`); svg.appendChild(r); }
+}
+function drawACWR(ser,i0,i1){
+  const W=420,H=300,L=34,R=40,T=16,B=28; const svg=svgIn('c-acwr',W,H,'ACWR');
+  const vals=ser.acwr.slice(i0,i1+1), n=vals.length, ok=vals.filter(v=>v!=null);
+  const lo=Math.min(.4,...ok.map(v=>v-.1)), hi=Math.max(1.8,...ok.map(v=>v+.1)), x=lin(0,Math.max(1,n-1),L+4,W-R), y=lin(lo,hi,H-B,T);
+  svg.appendChild(S_('rect',{x:L,y:y(1.3),width:W-R-L,height:y(.8)-y(1.3),fill:'#e9f1e9'}));
+  [.5,1,1.5].filter(t=>t>lo&&t<hi).forEach(t=>{hline(svg,L,W-R,y(t)); txt(svg,L-6,y(t)+4,t.toFixed(1),{'text-anchor':'end'});});
+  const base=21-i0; if(base>0){ svg.appendChild(S_('rect',{x:L,y:T,width:Math.min(W-R,x(Math.min(base,n-1)))-L,height:H-B-T,fill:'#f6f4ef',opacity:.75})); txt(svg,L+6,T+12,'baseline building',{'font-size':10}); }
+  svg.appendChild(S_('path',{d:pathOf(vals,x,y),fill:'none',stroke:'#6b7078','stroke-width':1.8,'stroke-linejoin':'round'}));
+  vals.forEach((v,k)=>{ if(v==null||(v>=.8&&v<=1.3)||k<base) return; svg.appendChild(S_('circle',{cx:x(k),cy:y(v),r:3.2,fill:v>1.3?'#e4571f':'#9a9ea6'})); });
+  const lv=vals[n-1]; if(lv!=null){ svg.appendChild(S_('circle',{cx:x(n-1),cy:y(lv),r:5,fill:'#1a1c22'})); txt(svg,x(n-1)+8,y(lv)+4,lv.toFixed(2),{fill:'#1a1c22','font-weight':600,'font-size':12}); }
+  txt(svg,x(0),H-8,fmtD(CAL[i0])); txt(svg,x(n-1),H-8,fmtD(CAL[i1]),{'text-anchor':'end'});
+  const hw=(W-L-R)/n; for(let k=0;k<n;k++){ const i=i0+k, v=vals[k], r=S_('rect',{x:x(k)-hw/2,y:T,width:hw,height:H-B-T,fill:'transparent'});
+    hover(r,()=>`<b>${fmtDL(CAL[i])}</b><br>ACWR ${v==null?'—':v.toFixed(2)}${i<21?' (baseline building)':''}`); svg.appendChild(r); }
+}
+
+/* ============================================================================
+   CONTROLS + RENDER
+   ========================================================================== */
+function buildControls(){
+  seg('f-sq',[{v:'all',l:'All'},{v:'Senior',l:'Senior'},{v:'Reserve',l:'Reserve'}],st.sq,v=>{st.sq=v;render();});
+  const hl=new Set(Object.values(INFO).map(i=>i.line)), hg=new Set(Object.values(INFO).map(i=>i.group));
+  sel('f-line',[{v:'all',l:'All positions'}].concat(LINES.filter(l=>hl.has(l)).map(l=>({v:l,l}))),st.line,v=>{st.line=v;render();});
+  sel('f-grp',[{v:'all',l:'All playing groups'}].concat(GROUPS.filter(g=>hg.has(g)).map(g=>({v:g,l:g}))),st.grp,v=>{st.grp=v;render();});
+  const counts={}; S.forEach(r=>counts[r.ath]=(counts[r.ath]||0)+1);
+  const pool=Q.athletes.filter(inPool); if(st.a!=='squad'&&!pool.includes(st.a)) pool.unshift(st.a);
+  const sqLabel=(()=>{const a=st.a; st.a='squad'; const w=who(); st.a=a; return w;})();
+  sel('f-a',[{v:'squad',l:sqLabel}].concat(pool.map(a=>({v:a,l:`${a} · ${(INFO[a]||{}).line||'—'} · ${counts[a]||0} sess.`}))),st.a,v=>{st.a=v;render();});
+  const tal=hasTAL(); if(st.m==='tal'&&!tal) st.m='td';
+  seg('f-m',['td','hsr','spr','tal'].map(k=>({v:k,l:METRICS[k].short,disabled:k==='tal'&&!tal,title:METRICS[k].label})),st.m,v=>{st.m=v;render();});
+  document.getElementById('m-hint').innerHTML=`${METRICS[st.m].label}${METRICS[st.m].note?' ('+METRICS[st.m].note+')':''}, summed per day.${tal?'':' TAL appears once the pipeline has been rerun with the drive mounted.'}`;
+  const f=document.getElementById('f-from'), t=document.getElementById('f-to');
+  [f,t].forEach(el=>{el.min=SEASON[0];el.max=SEASON[1];}); f.value=st.from; t.value=st.to;
+  const onD=()=>{let a=f.value||SEASON[0],b=t.value||SEASON[1]; if(a>b)[a,b]=[b,a]; st.from=a<SEASON[0]?SEASON[0]:a; st.to=b>SEASON[1]?SEASON[1]:b; render();};
+  f.onchange=onD; t.onchange=onD;
+  document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const w=+c.dataset.w; st.to=SEASON[1]; st.from=w?[addDays(SEASON[1],-7*w+1),SEASON[0]].sort().pop():SEASON[0]; render();});
+  seg('f-scn',[{v:'good',l:'Well-periodised'},{v:'bad',l:'Sporadic loading'},{v:'real',l:'Our data'}],st.scn,v=>{st.scn=v;render();});
+  writeHash({a:st.a,g:st.sq,line:st.line,grp:st.grp,from:st.from,to:st.to,m:st.m,scn:st.scn});
+}
+
+function render(){
+  buildControls();
+  const M=METRICS[st.m], i0=idxOf(st.from), i1=idxOf(st.to), ser=daily();
+  // toolkit series: our data (date range) or a synthetic example
+  let L,dates,unit;
+  if(st.scn==='real'){ L=ser.load.slice(i0,i1+1); dates=CAL.slice(i0,i1+1); unit=M.unit; }
+  else { L=generate(st.scn); dates=L.map((_,i)=>iso(Date.UTC(2025,11,1)+i*DAY)); unit='AU'; }
+  const F=drawF(L,dates,unit), X=drawMinis(L,dates);
+  drawLoad(ser,i0,i1); drawACWR(ser,i0,i1);
+
+  const lab=st.scn==='real'?`${who()} · daily ${M.label.toLowerCase()} (${M.unit})`:(st.scn==='good'?'Synthetic well-periodised athlete (AU)':'Synthetic sporadically-loaded athlete (AU)');
+  document.getElementById('s-F').textContent=`${lab} · ${F.cps.length} abrupt shift${F.cps.length!==1?'s':''} in the 7-day load${F.cps.length?' ('+F.cps.map(i=>fmtD(dates[i])).join(', ')+')':''} · ${F.spikes.length} spike days · hover any day for its date and values`;
+  document.getElementById('h-F').innerHTML=(F.cps.length
+    ? `Load shifted ${F.cps.length} time${F.cps.length>1?'s':''} — ${F.cps.map((c,k)=>`${fmtD(dates[c])} (${signed(pct(F.segs[k+1].mean,F.segs[k].mean))})`).join(', ')}`
+    : 'No abrupt shift in load — the 7-day trend is stable');
+
+  // load + ACWR titles
+  const inR=ser.load.slice(i0,i1+1), total=inR.reduce((a,b)=>a+b,0);
+  const mShare=total?Math.round(inR.reduce((a,v,k)=>a+(ser.mday[i0+k]?v:0),0)/total*100):0;
+  const rShare=total?Math.round(inR.reduce((a,v,k)=>a+(ser.mday[i0+k]==='Reserve'?v:0),0)/total*100):0;
+  document.getElementById('h-load').textContent=total?`Match days carry ${mShare}% of ${M.short} in this period${rShare?` — ${rShare}% from reserve games`:''}`:`No ${M.short} recorded in this period`;
+  document.getElementById('s-load').innerHTML=`Daily ${M.label.toLowerCase()} (${M.unit}) · ${who()} · <b style="color:var(--senior)">senior match</b> · <b style="color:var(--reserve)">reserve match</b> · <b style="color:#a59e8f">training</b> · <b style="color:var(--accent-ink)">7-day avg</b>`;
+  const ac=ser.acwr[i1], recent=ser.had.slice(Math.max(0,i1-27),i1+1).filter(Boolean).length, acOK=ac!=null&&recent>=4&&i1>=21;
+  const acV=ser.acwr.slice(Math.max(i0,21),i1+1).filter(v=>v!=null), inBand=acV.length?Math.round(acV.filter(v=>v>=.8&&v<=1.3).length/acV.length*100):null, nHigh=acV.filter(v=>v>1.3).length;
+  document.getElementById('h-acwr').textContent=inBand==null?'Not enough history for a stable ratio':`In the target band on ${inBand}% of days${nHigh?` — ${nHigh} day${nHigh>1?'s':''} above 1.3`:''}`;
+
+  // A: KPI cards
+  const wk=ser.load.slice(Math.max(0,i1-6),i1+1).reduce((a,b)=>a+b,0), pwk=i1>=7?ser.load.slice(Math.max(0,i1-13),i1-6).reduce((a,b)=>a+b,0):null;
+  const inS=S.filter(r=>r.d>=st.from&&r.d<=st.to&&(st.a==='squad'?inPool(r.ath):r.ath===st.a));
+  const dm=new Set(inS.filter(r=>r.t==='M').map(r=>r.d)), nT=new Set(inS.filter(r=>r.t!=='M').map(r=>r.d)).size;
+  const nS=[...dm].filter(d=>gradeOf(d)==='Senior').length, nR=[...dm].filter(d=>gradeOf(d)==='Reserve').length;
+  const lastCp=st.scn==='real'&&F.cps.length?F.cps.length-1:null;
+  const tg=(c,x)=>`<span class="tag ${c}">${x}</span>`, wd=pwk?pct(wk,pwk):null;
+  const K=[
+    {l:`Last 7 days · ${M.short}`,v:n0(wk),u:M.unit,f:wd==null?'nothing in the previous 7 days':`${tg(Math.abs(wd)>=30?'hi':'',signed(wd))} vs previous 7 days`},
+    {l:'Acute : chronic',v:ac==null?'—':ac.toFixed(2),u:'',f:!acOK?`${tg('','low data')} ${recent} session days in last 28`:`${tg(ac>1.3?'hi':ac>=.8?'ok':'',ac<.8?'below band':ac>1.3?'above band':'in band')} target 0.8–1.3`},
+    {l:'Sessions in period',v:String(dm.size+nT),u:'',f:`${nS} senior · ${nR} reserve · ${nT} training`},
+    {l:'Latest changepoint',v:lastCp==null?'—':fmtD(dates[F.cps[lastCp]]),u:'',f:lastCp==null?(st.scn==='real'?'no abrupt shift in period':'synthetic example shown in B'):`7-day ${M.short} ${signed(pct(F.segs[lastCp+1].mean,F.segs[lastCp].mean))}`}
+  ];
+  document.getElementById('kpis').innerHTML=K.map(o=>`<div class="kpi"><div class="k-label">${o.l}</div><div class="k-val">${o.v}<span class="k-unit">${o.u}</span></div><div class="k-foot">${o.f}</div></div>`).join('');
+  document.getElementById('d-A').textContent=`${who()} · ${M.label.toLowerCase()} · ${fmtD(st.from)} – ${fmtD(st.to)}`;
+
+  // story
+  document.getElementById('eyebrow').textContent=`${who()} · ${M.short} · ${fmtD(st.from)} – ${fmtD(st.to)}`;
+  let head;
+  if(!total) head=`No ${M.label.toLowerCase()} recorded for ${who()} in this period.`;
+  else if(!acOK) head=`${who()}: only ${recent} session day${recent!==1?'s':''} in the last 28 — <em>too little history</em> for a reliable acute:chronic ratio.`;
+  else if(ac>1.3) head=`${who()}: ${M.short} has <em>spiked</em> — acute:chronic ${ac.toFixed(2)}, above the 1.3 guide.`;
+  else if(ac<.8) head=`${who()}: ${M.short} has <em>dropped off</em> — acute:chronic ${ac.toFixed(2)}, below the 0.8 guide.`;
+  else head=`${who()}: ${M.short} is <em>on track</em> — acute:chronic ${ac.toFixed(2)}, inside the 0.8–1.3 band.`;
+  document.getElementById('headline').innerHTML=head;
+  const bl=[];
+  if(st.scn==='real'){
+    if(F.cps.length){ const last=F.cps[F.cps.length-1], k=F.cps.length-1; bl.push(`Most recent changepoint: ${fmtD(dates[last])} — the 7-day ${M.short} moved from ${n0(F.segs[k].mean)} to ${n0(F.segs[k+1].mean)} ${M.unit}/day (${signed(pct(F.segs[k+1].mean,F.segs[k].mean))}).`); }
+    else bl.push(`No changepoint in the 7-day ${M.short} for this period — load has been steady rather than stepped.`);
+    if(X.P.length){ const top=X.P.reduce((a,b)=>b.power>a.power?b:a); bl.push(`Strongest rhythm in the spectrum is ${top.p} days${top.p>=6&&top.p<=8?' — the weekly pattern is there':''}${(i1-i0+1)<84?`; with ${i1-i0+1} days of data, cycles of 14 d+ are low-confidence`:''}.`); }
+  } else bl.push(`Showing the ${st.scn==='good'?'well-periodised':'sporadic'} synthetic example in B and C1–C5 for comparison; the load and ACWR charts below stay on our data.`);
+  if(total) bl.push(`Match days carry ${mShare}% of the period's ${M.short}${rShare?` (${rShare}% from reserve games)`:''}.`);
+  document.getElementById('bullets').innerHTML=bl.map(b=>`<li>${b}</li>`).join('');
+  document.getElementById('foot').innerHTML=`Source: STATSports 10&nbsp;Hz exports via the pipeline; 'Entire Session' rows. Squad average = mean of the players in the current filter who recorded that day; non-session days are zero. Grade membership = played at least one match of that grade. ACWR = rolling 7-day ÷ 28-day mean over the full season (first 21 days are a baseline). Toolkit (B, C1–C5) after Schelling et&nbsp;al. (2025): 7-day MA / EWMA, periodogram, Morlet wavelet (ω₀ = 6), additive Holt-Winters, binary-segmentation changepoints on the 7-day series. TAL = Σ|Δv| between consecutive 10&nbsp;Hz Filtered Speed samples, in m·s⁻¹ (≈ ∫|a|&nbsp;dt; daily TAL ÷ minutes ÷ 60 = mean absolute acceleration, m·s⁻²). Players are pseudonymised.`;
+}
+
+function init(){
+  if(!Q){ document.querySelector('.main').innerHTML='<div class="empty">No pipeline data found. Run <code>python run.py</code>.</div>'; return; }
+  prepare(); const h=readHash();
+  if(['all','Senior','Reserve'].includes(h.g)) st.sq=h.g; if(h.a) st.a=h.a; if(h.line) st.line=h.line; if(h.grp) st.grp=h.grp;
+  if(METRICS[h.m]) st.m=h.m; if(['good','bad','real'].includes(h.scn)) st.scn=h.scn;
+  st.from=h.from&&h.from>=SEASON[0]&&h.from<=SEASON[1]?h.from:SEASON[0]; st.to=h.to&&h.to<=SEASON[1]&&h.to>=SEASON[0]?h.to:SEASON[1];
+  if(st.a!=='squad'&&!Q.athletes.includes(st.a)) st.a='squad';
+  render();
+}
+gate(init);
+</script>
+</body>
+</html>
