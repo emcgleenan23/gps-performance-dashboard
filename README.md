@@ -4,7 +4,7 @@ An end-to-end training-load pipeline and interactive dashboard for team-sport GP
 around Gaelic football and STATSports 10 Hz exports. Raw per-sample files go in; a
 pseudonymised, browser-only dashboard comes out.
 
-**[Live demo →](https://emcgleenan23.github.io/gps-performance-dashboard/)** (synthetic squad, no real athlete data)
+**[Live demo →](https://emcgleenan23.github.io/gps-dashboard-demo/)** · [Write-up](https://emcgleenan23.github.io/gps-performance-dashboard.html) (synthetic squad, no real athlete data)
 
 | Session analysis | Load monitoring |
 |---|---|
