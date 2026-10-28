@@ -176,40 +176,40 @@ button{font-family:inherit}
 
 </style>
 <style>
-  .pl-bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:12px}
-  .pl-bar .fld{margin:0}
-  .pl-bar .fld select{width:auto;min-width:210px}
-  .pl-week{margin-top:6px}
-  .pl-wh{font-family:var(--sora);font-weight:600;font-size:13px;margin:14px 0 6px}
-  .pl-row{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch}
-  .pl-scroll{overflow-x:auto;flex:1 1 600px;min-width:0}
-  .pl-grid{display:grid;grid-template-columns:72px repeat(7,minmax(94px,1fr));column-gap:6px;row-gap:7px;align-items:center;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:760px}
-  .pl-lab{font-size:11.5px;font-weight:600;color:var(--muted)}
-  .pl-barcell{height:118px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;border-bottom:1px solid var(--line)}
-  .pl-b{width:58%;border-radius:4px 4px 0 0}
-  .pl-v{font-size:11.5px;color:var(--muted)}
-  .pl-day{text-align:center;line-height:1.3}
-  .pl-day b{display:block;font-weight:600}
-  .pl-day span{font-size:11.5px;color:var(--faint)}
-  .pl-grid select,.pl-grid input{width:100%;font:inherit;font-size:12.5px;color:var(--ink);border:1px solid var(--line);border-radius:7px;background:#fff;height:30px;padding:0 6px;min-width:0}
-  .pl-grid input[type=time]{padding:0 3px;font-size:12px}
-  .pl-grid input[type=number]{text-align:center;-moz-appearance:textfield;padding:0 2px}
-  .pl-grid input[type=number]::-webkit-outer-spin-button,.pl-grid input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-  .pl-step{display:grid;grid-template-columns:22px minmax(0,1fr) 22px;gap:3px;align-items:center}
-  .pl-step button{height:30px;padding:0;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-size:14px;cursor:pointer}
-  .pl-step button:hover{border-color:#cfcabf}
-  .pl-c{text-align:center;color:var(--muted)}
-  .pl-c.bad{color:var(--accent-ink);font-weight:600}
-  .pl-sum{flex:0 0 172px;display:flex;flex-direction:column;justify-content:center;gap:12px}
-  .pl-sum .k-val.warn{color:var(--accent-ink)}
-  .pl-flags{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
-  .pl-flags li{font-size:12.5px;color:var(--accent-ink);padding-left:15px;position:relative}
-  .pl-flags li::before{content:'';position:absolute;left:0;top:6px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .pl-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:6px}
+  .pl-top select{font-size:13px;color:var(--ink);padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;height:34px}
+  .pl-top .seg{flex-wrap:nowrap}
+  .pl-link{margin-left:auto;font-size:12.5px;color:var(--muted);background:none;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .pl-link:hover{color:var(--ink)}
+  .pl-wh{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;margin:18px 0 4px;font-size:12.5px;color:var(--muted)}
+  .pl-wh b{font-family:var(--sora);font-weight:600;font-size:13.5px;color:var(--ink)}
+  .pl-wh .warn{color:var(--accent-ink);font-weight:600}
+  .pl-scroll{overflow-x:auto}
+  .pl-grid{display:grid;grid-template-columns:repeat(7,minmax(96px,1fr));column-gap:10px;row-gap:6px;align-items:center;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:720px}
+  .pl-barcell{height:96px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;border-bottom:1px solid var(--line)}
+  .pl-b{width:46%;border-radius:4px 4px 0 0}
+  .pl-v{font-size:11px;color:var(--faint)}
+  .pl-day{text-align:center;font-size:12px;color:var(--muted)}
+  .pl-day b{color:var(--ink);font-weight:600}
+  .pl-grid select{width:100%;font:inherit;font-size:12.5px;color:var(--ink);border:1px solid var(--line);border-radius:7px;background:#fff;height:30px;padding:0 6px}
+  .pl-grid select.rest{color:var(--faint);background:transparent}
+  .pl-step{display:grid;grid-template-columns:22px minmax(0,1fr) 22px;gap:2px;align-items:center}
+  .pl-step button{height:28px;padding:0;border:0;border-radius:6px;background:#f1efe9;color:var(--ink);font-size:14px;cursor:pointer}
+  .pl-step button:hover{background:#e7e4dd}
+  .pl-step input{width:100%;min-width:0;height:28px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:center;font:inherit;font-size:13px;font-weight:600;color:var(--ink);-moz-appearance:textfield}
+  .pl-step input::-webkit-outer-spin-button,.pl-step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .pl-c{text-align:center;color:var(--muted);min-height:18px}
+  .pl-meta{display:flex;justify-content:center;align-items:center;gap:4px;font-size:11.5px;color:var(--faint);min-height:22px}
+  .pl-meta input{width:58px;border:0;background:transparent;font:inherit;font-size:11.5px;color:var(--muted);padding:0;text-align:right}
+  .pl-meta input::-webkit-calendar-picker-indicator{display:none}
+  .pl-meta .bad{color:var(--accent-ink);font-weight:600}
+  .pl-flags{margin:14px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+  .pl-flags li{font-size:12.5px;color:var(--accent-ink)}
+  .pl-flags li::before{content:'!';display:inline-block;width:15px;font-weight:700}
   .pl-flags:empty{display:none}
-  .pl-pred{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
-  .pl-pred b{font-family:var(--sora);font-weight:600;font-size:18px;color:var(--ink);margin-left:4px}
-  .pl-pred b.hi{color:var(--accent-ink)}
-  .pl-grid :is(select,input,button):focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .pl-grid :is(select,input,button):focus-visible,.pl-top :is(select,button):focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  details.foot summary{cursor:pointer;color:var(--muted)}
+  details.foot p{margin:6px 0 0}
 </style>
 </head>
 <body>
@@ -237,32 +237,30 @@ button{font-family:inherit}
       <section>
         <h3><span class="n">2</span>Physical metric</h3>
         <div class="seg" id="f-m" role="group" aria-label="Load metric"></div>
-        <div class="hint">The planner's bars, inputs and predicted ACWR follow this metric.</div>
       </section>
     </aside>
 
     <main class="main">
       <div class="sec"><span class="l">A</span><span class="t">Plan</span><span class="d" id="d-A"></span><span class="rule"></span></div>
       <div class="panel">
-        <div class="pl-bar">
-          <div class="fld"><label for="p-start">Starting week</label><select id="p-start"></select></div>
-          <div class="fld"><span class="lbl">Weeks</span><div class="seg" id="p-n" role="group" aria-label="Weeks to plan"></div></div>
-          <button class="btn" id="p-reset">Reset to suggestion</button>
+        <div class="pl-top">
+          <select id="p-start" aria-label="Starting week"></select>
+          <div class="seg" id="p-n" role="group" aria-label="Weeks to plan"></div>
+          <button class="pl-link" id="p-reset">Reset</button>
         </div>
-        <p class="p-sub" id="p-sum"></p>
         <div id="p-weeks"></div>
         <ul class="pl-flags" id="p-flags"></ul>
       </div>
 
-      <div class="sec"><span class="l">B</span><span class="t">Predicted ACWR</span><span class="d">the season so far plus the plan · updates as you edit</span><span class="rule"></span></div>
+      <div class="sec"><span class="l">B</span><span class="t">Predicted ACWR</span><span class="rule"></span></div>
       <div class="panel">
-        <div class="p-head"><div><h2 id="h-B"></h2><p class="p-sub">Weekly ACWR = the week ÷ the mean of the previous four · EWMA ACWR read at the end of each week · <span style="color:var(--ok)">band 0.8–1.3</span></p></div>
-          <div class="pl-pred" id="p-pred"></div></div>
+        <h2 id="h-B"></h2>
         <div id="c-B"></div>
-        <div class="legend"><span><i style="background:#6b7078"></i>rolling ACWR</span><span><i style="background:#e4571f"></i>EWMA ACWR</span>
-          <span><i style="background:repeating-linear-gradient(90deg,#6b7078 0 4px,transparent 4px 7px)"></i>planned weeks</span><span><i style="background:var(--ok-band);height:10px"></i>0.8–1.3</span></div>
+        <div class="legend"><span><i style="background:#6b7078"></i>rolling</span><span><i style="background:#e4571f"></i>EWMA</span><span>○ planned</span><span><i style="background:var(--ok-band);height:10px"></i>0.8–1.3</span></div>
       </div>
-      <p class="foot">Pitch sessions only; recovery and primer work is gym-based and not tracked. Suggested sessions by days from the last match and to the next: ≈75% of a match's total distance on MD-4, ≈50% on MD-2, ≈60% in a short week, nothing on MD+1, MD+2 or MD-1. A match is the selection's average per player-match (at least 40 min). HSR, sprint and TAL start from the selection's training ratio to distance and can be set directly. Weeks with no fixture get a match on the weekday of the last senior game; change any day to Rest, Pitch or Match. HSR and sprint guides of 0.6–0.9× and 0.6–1.1× a match per week follow Buchheit et&nbsp;al. (2023). These are guides, not safety limits. Players are pseudonymised.</p>
+      <details class="foot"><summary>How the suggestions work</summary>
+        <p>Pitch sessions only; recovery and primer work is gym-based. Sessions are placed by days from the last match and to the next: ≈75% of a match's distance on MD-4, ≈50% on MD-2, ≈60% in a short week, nothing on MD+1, MD+2 or MD-1. A match is the selection's average per player-match (40 min or more). HSR, sprint and TAL start from the selection's training ratio to distance and can be set directly with the metric buttons. Weeks with no fixture get a match on the usual match day. Times are start times; the small figure beside each is hours since the last pitch session or match. ACWR = the week ÷ the mean of the previous four; EWMA ACWR after Williams et&nbsp;al. HSR and sprint guides (0.6–0.9× and 0.6–1.1× a match per week) follow Buchheit et&nbsp;al. (2023). Guides, not safety limits. Players are pseudonymised.</p>
+      </details>
     </main>
   </div>
 </div>
@@ -495,8 +493,8 @@ function buildControls(){
   const tal=hasTAL(); if(st.m==='tal'&&!tal) st.m='td';
   seg('f-m',KEYS.map(k=>({v:k,l:METRICS[k].short,disabled:k==='tal'&&!tal,title:METRICS[k].label})),st.m,v=>{st.m=v;render();});
   const weeks=weekOptions(); if(!weeks.includes(st.start)) st.start=weeks[weeks.length-1];
-  sel('p-start',weeks.map(w=>{ const f=Object.keys(FIX).filter(d=>d>=w&&d<=addDays(w,6)); return {v:w,l:`Mon ${fmtD(w)}${f.length?' · '+f.map(d=>gradeOf(d)+' '+fmtDL(d).split(' ')[0]).join(', '):w>SEASON[1]?' · next week':''}`}; }),st.start,v=>{st.start=v;render();});
-  seg('p-n',[1,2,3,4].map(n=>({v:n,l:n===1?'1 week':String(n)})),st.n,v=>{st.n=+v;render();});
+  sel('p-start',weeks.map(w=>{ const f=Object.keys(FIX).filter(d=>d>=w&&d<=addDays(w,6)); return {v:w,l:`Week of ${fmtD(w)}${w>SEASON[1]?' (next)':''}`}; }),st.start,v=>{st.start=v;render();});
+  seg('p-n',[1,2,3,4].map(n=>({v:n,l:n+' wk'})),st.n,v=>{st.n=+v;render();});
   document.getElementById('p-reset').onclick=()=>{EDITS=new Map();render();};
   writeHash({a:st.a,g:st.sq,line:st.line,grp:st.grp,m:st.m,start:st.start,n:st.n});
 }
@@ -505,9 +503,7 @@ function render(){
   buildControls();
   const key=[st.sq,st.a,st.line,st.grp].join('|'); if(key!==EDIT_KEY){ EDITS=new Map(); EDIT_KEY=key; }
   const M=METRICS[st.m], R=references(), H=histLoad(st.m), days=plan(R), ref=R.ref[st.m];
-  document.getElementById('d-A').textContent=`${who()} · ${M.label.toLowerCase()} · ${st.n} week${st.n>1?'s':''} from ${fmtD(st.start)}`;
-  document.getElementById('p-sum').innerHTML=`Suggested from the microcycle and sized to ${who()}'s match average (<b>${n0(R.ref.td)} m</b> over ${R.matches} player-matches). `+
-    (st.m==='td'?`Change a session's distance and its HSR, sprint and TAL follow it; set those directly from the Physical metric buttons.`:`${M.short} starts from the training ratio to distance (${n0(R.ratio[st.m]*1000)} ${M.unit} per km) and can be set directly.`);
+  document.getElementById('d-A').textContent=`${who()} · ${M.short} (${M.unit}) · match ≈ ${n0(ref)}`;
 
   // recovery: start to start since the last pitch session or match
   const prev=days[0].prev, ev=(prev?[{d:prev,tm:wkend(prev)?'14:00':'19:30'}]:[]).concat(days.filter(x=>x.t!=='REST'));
@@ -515,24 +511,21 @@ function render(){
 
   const vmax=Math.max(1,ref,...days.map(x=>val(x,st.m,R))), flags=[], wrap=document.getElementById('p-weeks'); wrap.innerHTML='';
   for(let w=0;w<st.n;w++){
-    const wd=days.slice(w*7,w*7+7), box=document.createElement('div'); box.className='pl-week'; wrap.appendChild(box);
-    if(st.n>1) box.insertAdjacentHTML('beforeend',`<div class="pl-wh">Week of ${fmtDL(wd[0].d)}</div>`);
-    const row=document.createElement('div'); row.className='pl-row'; box.appendChild(row);
-    const sc=document.createElement('div'); sc.className='pl-scroll'; const g=document.createElement('div'); g.className='pl-grid'; sc.appendChild(g); row.appendChild(sc);
+    const wd=days.slice(w*7,w*7+7);
+    const tot=wd.reduce((a,x)=>a+val(x,st.m,R),0), train=wd.reduce((a,x)=>a+(x.t==='PITCH'?val(x,st.m,R):0),0);
+    const act=wd.reduce((a,x)=>a+(H[x.d]||0),0), hasAct=wd.some(x=>x.d<=SEASON[1]);
+    let head=`<b>Week of ${fmtD(wd[0].d)}</b><span>total ${n0(tot)} ${M.unit}${hasAct?` (actual ${n0(act)})`:''}</span>`;
+    if(GUIDE[st.m]&&ref){ const x=train/ref, gd=GUIDE[st.m], off=x<gd[0]||x>gd[1];
+      head+=`<span class="${off?'warn':''}">training ${x.toFixed(2)}× a match (guide ${gd[0]}–${gd[1]})</span>`; }
+    wrap.insertAdjacentHTML('beforeend',`<div class="pl-wh">${head}</div>`);
+    const sc=document.createElement('div'); sc.className='pl-scroll'; const g=document.createElement('div'); g.className='pl-grid'; sc.appendChild(g); wrap.appendChild(sc);
     const add=(cls,html)=>{ const c=document.createElement('div'); c.className=cls||''; if(html!=null) c.innerHTML=html; g.appendChild(c); return c; };
-    add('pl-lab','');
-    wd.forEach(x=>{ const v=val(x,st.m,R), c=add('pl-barcell'); if(v>0) c.innerHTML=`<div class="pl-v">${fmtK(v)}</div><div class="pl-b" style="height:${Math.round(v/vmax*92)}px;background:${x.t==='MATCH'?'var(--senior)':'var(--accent)'}"></div>`;
+    wd.forEach(x=>{ const v=val(x,st.m,R), c=add('pl-barcell'); if(v>0) c.innerHTML=`<div class="pl-v">${v>=1000?fmtK(v):n0(v)}</div><div class="pl-b" style="height:${Math.round(v/vmax*74)}px;background:${x.t==='MATCH'?'var(--senior)':'var(--accent)'}"></div>`;
       hover(c,()=>`<b>${fmtDL(x.d)}</b> · ${TYPES[x.t]}<br>${KEYS.map(k=>`${METRICS[k].short} ${n0(val(x,k,R))} ${METRICS[k].unit}`).join('<br>')}`); });
-    add('pl-lab','');
-    wd.forEach(x=>add('pl-day',`<b>${fmtDL(x.d)}</b><span>${x.t==='MATCH'?'MD':x.n<99?'MD-'+x.n:x.k<99?'MD+'+x.k:''}</span>`));
-    add('pl-lab','Session');
-    wd.forEach(x=>{ const s=document.createElement('select'); s.setAttribute('aria-label','Session on '+x.d);
+    wd.forEach(x=>add('pl-day',`<b>${fmtDL(x.d).replace(/ \w+$/,'')}</b> · ${x.t==='MATCH'?'MD':x.n<99?'MD-'+x.n:x.k<99?'MD+'+x.k:''}`));
+    wd.forEach(x=>{ const s=document.createElement('select'); s.setAttribute('aria-label','Session on '+x.d); if(x.t==='REST') s.className='rest';
       s.innerHTML=Object.entries(TYPES).map(([k,l])=>`<option value="${k}">${l}</option>`).join(''); s.value=x.t;
       s.onchange=()=>edit(x.d,{t:s.value===x.sugg?null:s.value,td:null,ov:null,tm:null}); add('').appendChild(s); });
-    add('pl-lab','Start');
-    wd.forEach(x=>{ const c=add(''); if(x.t==='REST') return; const i=document.createElement('input'); i.type='time'; i.value=x.tm; i.setAttribute('aria-label','Start time '+x.d);
-      i.onchange=()=>{ if(i.value) edit(x.d,{tm:i.value}); }; c.appendChild(i); });
-    add('pl-lab',`${M.short} (${M.unit})`);
     wd.forEach(x=>{
       if(x.t==='MATCH'){ add('pl-c',n0(ref)); return; }
       const c=add(''); if(x.t!=='PITCH') return;
@@ -542,25 +535,18 @@ function render(){
       const i=document.createElement('input'); i.type='number'; i.min='0'; i.step=String(STEP[st.m]); i.value=String(Math.round(v)); i.setAttribute('aria-label',`${M.short} on ${x.d}`);
       i.onchange=()=>{ const n=Number(i.value); if(Number.isFinite(n)) set(n); };
       box.append(b('−',-STEP[st.m],'Less'),i,b('+',STEP[st.m],'More')); c.appendChild(box); });
-    add('pl-lab','Recovery');
-    wd.forEach(x=>{ const c=add('pl-c',x.t==='REST'||x.rec==null?'':Math.round(x.rec)+' h'); if(x.t!=='REST'&&x.rec!=null&&x.rec<24) c.classList.add('bad'); });
-
-    // week card
-    const tot=wd.reduce((a,x)=>a+val(x,st.m,R),0), train=wd.reduce((a,x)=>a+(x.t==='PITCH'?val(x,st.m,R):0),0);
-    const act=wd.reduce((a,x)=>a+(H[x.d]||0),0), hasAct=wd.some(x=>x.d<=SEASON[1]);
-    let html=`<div class="kpi"><div class="k-label">Week total · ${M.short}</div><div class="k-val">${n0(tot)}<span class="k-unit">${M.unit}</span></div>${hasAct?`<div class="k-foot">actually done: ${n0(act)} ${M.unit}</div>`:''}</div>`;
-    if(GUIDE[st.m]&&ref){ const x=train/ref, gd=GUIDE[st.m], off=x<gd[0]||x>gd[1];
-      html+=`<div class="kpi"><div class="k-label">Training ÷ match</div><div class="k-val ${off?'warn':''}">${x.toFixed(2)}<span class="k-unit">×</span></div><div class="k-foot">guide ${gd[0]}–${gd[1]}×</div></div>`;
-      if(off) flags.push(`Week of ${fmtD(wd[0].d)}: ${M.short} in training is ${x.toFixed(2)}× a match; guide ${gd[0]}–${gd[1]}×.`); }
-    const card=document.createElement('div'); card.className='pl-sum'; card.innerHTML=html; row.appendChild(card);
+    wd.forEach(x=>{ const c=add('pl-meta'); if(x.t==='REST') return;
+      const i=document.createElement('input'); i.type='time'; i.value=x.tm; i.setAttribute('aria-label','Start time '+x.d); i.title='Start time';
+      i.onchange=()=>{ if(i.value) edit(x.d,{tm:i.value}); }; c.appendChild(i);
+      if(x.rec!=null){ const r=document.createElement('span'); r.textContent='· '+Math.round(x.rec)+' h'; r.title='Hours since the last pitch session or match'; if(x.rec<24) r.className='bad'; c.appendChild(r); } });
   }
 
   days.forEach((x,i)=>{
     if(x.t!=='PITCH') return;
     const nm=days.find(y=>y.t==='MATCH'&&(y.d>x.d||(y.d===x.d&&y.tm>x.tm)));
     if(nm){ const h=hrs(x,nm); if(h<48&&x.td>0.6*R.ref.td) flags.push(`${fmtDL(x.d)}: ${n0(x.td)} m session ${Math.round(h)} h before a match.`); }
-    if(x.k===2) flags.push(`${fmtDL(x.d)}: pitch session on MD+2 — a rest or off-feet day is advised.`);
-    if(x.rec!=null&&x.rec<24) flags.push(`${fmtDL(x.d)}: under 24 h since the last pitch session or match.`);
+    if(x.k===2) flags.push(`${fmtDL(x.d)}: pitch session on MD+2 (rest advised).`);
+    if(x.rec!=null&&x.rec<24) flags.push(`${fmtDL(x.d)}: under 24 h since the last session.`);
     const p=days[i-1], big=y=>y&&(y.t==='MATCH'||(y.t==='PITCH'&&y.td>=0.5*R.ref.td));
     if(big(p)&&big(x)) flags.push(`${fmtDL(p.d)} and ${fmtDL(x.d)}: back-to-back heavy days.`);
   });
@@ -569,10 +555,8 @@ function render(){
   document.getElementById('p-flags').innerHTML=flags.map(f=>`<li>${f}</li>`).join('');
 
   drawB(wk);
-  const b=v=>`<b class="${v!=null&&(v>1.3||v<.8)?'hi':''}">${v==null?'—':v.toFixed(2)}</b>`;
-  document.getElementById('p-pred').innerHTML=planned.map(o=>`<span>${st.n>1?fmtD(o.wk)+' · ':''}ACWR${b(o.r)}</span><span>EWMA${b(o.e)}</span>`).join('');
-  const last=planned[planned.length-1];
-  document.getElementById('h-B').textContent=last&&last.r!=null?`${st.n>1?'By the week of '+fmtD(last.wk):'This plan'} puts ${M.short} ACWR at ${last.r.toFixed(2)} (EWMA ${last.e==null?'—':last.e.toFixed(2)})${last.r>1.3||last.e>1.3?' — above the 1.3 guide':last.r<.8?' — below 0.8':' — inside the band'}`:'Not enough history for a predicted ratio';
+  const f2=v=>v==null?'—':v.toFixed(2), state=o=>o.r>1.3||o.e>1.3?'above the band':o.r!=null&&o.r<.8?'below the band':'inside the band';
+  document.getElementById('h-B').textContent=planned.length&&planned[0].r!=null?planned.map(o=>`${st.n>1?fmtD(o.wk)+': ':''}ACWR ${f2(o.r)} · EWMA ${f2(o.e)}`).join('   |   ')+(st.n===1?` — ${state(planned[0])}`:''):'Not enough history for a predicted ratio';
 }
 
 function init(){
