@@ -5,7 +5,7 @@
     DASH_PASSWORD=... python publish.py
 
 What it does
-  1. Inlines each page (dashboard/index.html, dashboard/load.html) into ONE self-contained file:
+  1. Inlines each page (dashboard/index.html, load.html, planner.html) into ONE self-contained file:
      CSS, shared JS and the pipeline data (outputs/*.js) are embedded, nothing is fetched.
   2. gzips it and encrypts it with AES-256-GCM. The key is derived from your password with
      PBKDF2-SHA256 (600,000 iterations, random salt per build) - the same scheme StatiCrypt uses.
@@ -32,7 +32,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 ROOT = pathlib.Path(__file__).parent
 SRC, DATA, OUT = ROOT / "dashboard", ROOT / "outputs", ROOT / "docs"
-PAGES = {"index.html": "Session analysis", "load.html": "Load monitoring"}
+PAGES = {"index.html": "Session analysis", "load.html": "Load monitoring", "planner.html": "Planner"}
 ITER = 600_000
 MIN_LEN = 12
 
