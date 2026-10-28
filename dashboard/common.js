@@ -30,7 +30,10 @@ const METRICS = {
   tal:{label:'Total acceleration load',short:'TAL',   unit:'m·s⁻¹', col:'tal',  color:'#0e86c7', note:'Σ|Δv|'}
 };
 const LINES=['Goalkeeper','Full-Back','Half-Back','Midfield','Half-Forward','Full-Forward'];
-const GROUPS=['Goalkeeper','Inside defender','Middle 8','Inside forward'];
+const GROUPS=['Goalkeeper','Inside defender','Defence','Middle 8','Middle third','Inside forward','Attack'];
+/* values present in the data, in LINES/GROUPS order where they match (case-insensitive prefix), others after */
+function ordered(values,order){ const rank=v=>{const i=order.findIndex(o=>v.toLowerCase().startsWith(o.toLowerCase())); return i<0?99:i;};
+  return [...new Set(values)].filter(Boolean).sort((a,b)=>rank(a)-rank(b)||a.localeCompare(b)); }
 
 /* ---------- formatting ---------- */
 const DAY=86400000;

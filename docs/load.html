@@ -184,6 +184,7 @@ button{font-family:inherit}
     <nav class="tabs" aria-label="Pages">
       <a href="index.html" data-page="index.html">Session analysis</a>
       <a href="load.html" data-page="load.html" aria-current="page">Load monitoring</a>
+      <a href="planner.html" data-page="planner.html">Planner</a>
     </nav>
     <span class="badge">Synthetic demo data</span>
   </header>
@@ -213,7 +214,7 @@ button{font-family:inherit}
       <section class="story" aria-live="polite"><div class="eyebrow" id="eyebrow"></div><h1 id="headline"></h1><ul id="bullets"></ul></section>
       <section class="kpis" id="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))"></section>
 
-      <div class="sec"><span class="l">B</span><span class="t">Changepoint detection</span><span class="d">abrupt shifts in the 7-day load · Schelling et al. (2025)</span><span class="rule"></span></div>
+      <div class="sec"><span class="l">B</span><span class="t">Changepoint detection</span><span class="d">sustained shifts in the 7-day load · Schelling et al. (2025)</span><span class="rule"></span></div>
       <div class="panel">
         <div class="p-head"><div><h2 id="h-F"></h2><p class="p-sub" id="s-F"></p></div>
           <div class="toggle" id="f-scn" role="group" aria-label="Data"></div></div>
@@ -223,21 +224,17 @@ button{font-family:inherit}
           <span><i style="background:#e4571f;width:7px;height:7px;border-radius:50%"></i>spike (&gt; mean + 1 SD) — hover for date</span></div>
       </div>
 
-      <div class="sec"><span class="l">C</span><span class="t">Time-series toolkit</span><span class="d">supporting views of the same series as B</span><span class="rule"></span></div>
-      <div class="minis">
-        <div class="mini"><div class="mt"><b>C1</b>Raw daily load</div><div class="ms">Every session and rest day</div><div id="c-A"></div></div>
-        <div class="mini"><div class="mt"><b>C2</b>Smoothing</div><div class="ms">7-day MA (dark) vs EWMA α 0.3 (orange)</div><div id="c-B"></div></div>
-        <div class="mini"><div class="mt"><b>C3</b>Power spectrum</div><div class="ms">Dominant cycle lengths · 7 d marked</div><div id="c-C"></div></div>
-        <div class="mini"><div class="mt"><b>C4</b>Wavelet</div><div class="ms">Rhythm strength over time</div><div id="c-D"></div></div>
-        <div class="mini"><div class="mt"><b>C5</b>Forecast</div><div class="ms">Holt-Winters, 28 d, 95% band</div><div id="c-E"></div></div>
+      <div class="sec"><span class="l">C</span><span class="t">ACWR vs changepoint</span><span class="d">the same series as B, two ways of spotting a change in load</span><span class="rule"></span></div>
+      <div class="panel">
+        <h2 id="h-AC"></h2><p class="p-sub" id="s-AC"></p>
+        <div id="c-AC"></div>
+        <div class="legend"><span><i style="background:#6b7078"></i>rolling ACWR (7-day ÷ 28-day)</span><span><i style="background:#e4571f"></i>EWMA ACWR</span>
+          <span><i style="background:var(--ok-band);height:10px"></i>0.8–1.3 band</span><span><i style="background:#111318;width:2px;height:10px"></i>changepoint (from B)</span>
+          <span><i style="background:#e4571f;width:7px;height:7px;border-radius:50%"></i>day outside the band</span></div>
       </div>
 
-      <div class="row2">
-        <div><div class="sec"><span class="l">D</span><span class="t">Daily load</span><span class="rule"></span></div>
-          <div class="panel"><h2 id="h-load"></h2><p class="p-sub" id="s-load"></p><div id="c-load"></div></div></div>
-        <div><div class="sec"><span class="l">E</span><span class="t">Acute : chronic workload</span><span class="rule"></span></div>
-          <div class="panel"><h2 id="h-acwr"></h2><p class="p-sub">Acute (7-day) ÷ chronic (28-day) · <span style="color:var(--ok)">target band 0.8–1.3</span></p><div id="c-acwr"></div></div></div>
-      </div>
+      <div class="sec"><span class="l">D</span><span class="t">Daily load</span><span class="rule"></span></div>
+      <div class="panel"><h2 id="h-load"></h2><p class="p-sub" id="s-load"></p><div id="c-load"></div></div>
       <p class="foot" id="foot"></p>
     </main>
   </div>
@@ -281,7 +278,10 @@ const METRICS = {
   tal:{label:'Total acceleration load',short:'TAL',   unit:'m·s⁻¹', col:'tal',  color:'#0e86c7', note:'Σ|Δv|'}
 };
 const LINES=['Goalkeeper','Full-Back','Half-Back','Midfield','Half-Forward','Full-Forward'];
-const GROUPS=['Goalkeeper','Inside defender','Middle 8','Inside forward'];
+const GROUPS=['Goalkeeper','Inside defender','Defence','Middle 8','Middle third','Inside forward','Attack'];
+/* values present in the data, in LINES/GROUPS order where they match (case-insensitive prefix), others after */
+function ordered(values,order){ const rank=v=>{const i=order.findIndex(o=>v.toLowerCase().startsWith(o.toLowerCase())); return i<0?99:i;};
+  return [...new Set(values)].filter(Boolean).sort((a,b)=>rank(a)-rank(b)||a.localeCompare(b)); }
 
 /* ---------- formatting ---------- */
 const DAY=86400000;
@@ -389,24 +389,12 @@ function generate(scn,N=182){ const wf=[0.22,0.10,1.00,0.85,0.60,0.28,1.28];
   return load; }
 const roll=(a,w)=>a.map((_,i)=>mean(a.slice(Math.max(0,i-w+1),i+1)));
 function ewma(a,al){let e=a[0];return a.map((v,i)=>{e=i?al*v+(1-al)*e:v;return e;});}
-function psd(xz){const n=xz.length,out=[];for(let p=2;p<=Math.min(60,Math.floor(n/2));p++){const w=2*Math.PI/p;let re=0,im=0;for(let t=0;t<n;t++){re+=xz[t]*Math.cos(w*t);im+=xz[t]*Math.sin(w*t);}out.push({p,power:(re*re+im*im)/n});}return out;}
-function holtWinters(y,m,al,be,ga,h){const n=y.length;let level=mean(y.slice(0,m)),trend=(mean(y.slice(m,2*m))-mean(y.slice(0,m)))/m;
-  const seas=[];for(let i=0;i<m;i++)seas[i]=y[i]-level;const resid=[];
-  for(let t=0;t<n;t++){const s=seas[t%m],lp=level;resid.push(y[t]-(level+trend+s));level=al*(y[t]-s)+(1-al)*(level+trend);trend=be*(level-lp)+(1-be)*trend;seas[t%m]=ga*(y[t]-level)+(1-ga)*s;}
-  const sd=Math.sqrt(mean(resid.map(r=>r*r))),fc=[],lo=[],hi=[];
-  for(let k=1;k<=h;k++){const f=level+k*trend+seas[(n+k-1)%m],band=1.96*sd*Math.sqrt(k);fc.push(Math.max(0,f));lo.push(Math.max(0,f-band));hi.push(f+band);}
-  return {fc,lo,hi};}
 function cost(a){const m=mean(a);let s=0;for(const x of a)s+=(x-m)*(x-m);return s;}
 function binseg(series,minLen,pen,maxK){const cps=[];
   (function rec(lo,hi){if(hi-lo<2*minLen||cps.length>=maxK)return;let best=Infinity,bi=-1;
     for(let i=lo+minLen;i<=hi-minLen;i++){const c=cost(series.slice(lo,i))+cost(series.slice(i,hi));if(c<best){best=c;bi=i;}}
     if(cost(series.slice(lo,hi))-best>pen&&bi>0){cps.push(bi);rec(lo,bi);rec(bi,hi);}})(0,series.length);
   return cps.sort((a,b)=>a-b);}
-const w0=6,CONV=(w0+Math.sqrt(2+w0*w0))/(4*Math.PI),PI_M14=Math.pow(Math.PI,-0.25);
-function coef(xz,period,b){const N=xz.length,s=period*CONV,half=Math.ceil(4*s),norm=1/Math.sqrt(s);let re=0,im=0;
-  for(let t=Math.max(0,b-half);t<=Math.min(N-1,b+half);t++){const tau=(t-b)/s,env=Math.exp(-tau*tau/2)*PI_M14;re+=xz[t]*env*Math.cos(w0*tau);im+=xz[t]*env*(-Math.sin(w0*tau));}
-  return norm*Math.hypot(re,im);}
-const mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
 
 /* ---------- F: changepoints (feature panel) ---------- */
 function drawF(L,dates,unit){
@@ -434,47 +422,9 @@ function drawF(L,dates,unit){
   spikes.forEach(o=>{const c=S_('circle',{cx:X(o.i),cy:Y(o.v),r:4.2,fill:'#e4571f',stroke:'#fff','stroke-width':1.2,class:'hit'}); hover(c,()=>tip(o.i)); svg.appendChild(c);});
   return {cps,segs,spikes};
 }
-/* ---------- A–E: supplementary minis ---------- */
-const MW=250, MH=150, mm={l:28,r:6,t:8,b:18};
-function miniFrame(id,L,label){ const svg=svgIn(id,MW,MH,label), N=L.length; return {svg,N,X:d=>mm.l+d/(Math.max(1,N-1))*(MW-mm.l-mm.r)}; }
-function miniY(svg,mx){ const Y=lin(0,mx,MH-mm.b,mm.t); [0,mx].forEach(t=>{hline(svg,mm.l,MW-mm.r,Y(t)); txt(svg,mm.l-4,Y(t)+3,fmtK(t),{'text-anchor':'end','font-size':9});}); return Y; }
-function miniDates(svg,X,dates){ [0,Math.floor((dates.length-1)/2),dates.length-1].forEach((i,k)=>txt(svg,X(i),MH-5,fmtD(dates[i]),{'text-anchor':['start','middle','end'][k],'font-size':9})); }
-function drawMinis(L,dates){
-  const mx=niceMax(Math.max(...L,1)*1.05);
-  { const {svg,X}=miniFrame('c-A',L,'Raw'); const Y=miniY(svg,mx); miniDates(svg,X,dates); svg.appendChild(S_('path',{d:pathOf(L,X,Y),fill:'none',stroke:'#31343c','stroke-width':1})); }
-  { const {svg,X}=miniFrame('c-B',L,'Smoothing'); const Y=miniY(svg,mx); miniDates(svg,X,dates);
-    svg.appendChild(S_('path',{d:pathOf(L,X,Y),fill:'none',stroke:'#d5d8dd','stroke-width':.9}));
-    svg.appendChild(S_('path',{d:pathOf(roll(L,7),X,Y),fill:'none',stroke:'#31343c','stroke-width':1.6}));
-    svg.appendChild(S_('path',{d:pathOf(ewma(L,0.3),X,Y),fill:'none',stroke:'#e4571f','stroke-width':1.4})); }
-  const mu=mean(L), xz=L.map(v=>v-mu), P=psd(xz);
-  { const svg=svgIn('c-C',MW,MH,'Power spectrum'); if(P.length){ const pm=Math.max(...P.map(o=>o.power))*1.08, pmax=P.reduce((a,b)=>b.power>a.power?b:a), pM=P[P.length-1].p;
-      const X=p=>mm.l+(p-2)/(pM-2||1)*(MW-mm.l-mm.r), Y=v=>(MH-mm.b)-v/pm*(MH-mm.b-mm.t);
-      hline(svg,mm.l,MW-mm.r,MH-mm.b);
-      P.forEach(o=>{ const on=o.p===pmax.p, l=S_('line',{x1:X(o.p),x2:X(o.p),y1:MH-mm.b,y2:Y(o.power),stroke:on?'#111318':'#c9cdd3','stroke-width':on?2.4:1.4}); svg.appendChild(l);
-        const r=S_('rect',{x:X(o.p)-3,y:mm.t,width:6,height:MH-mm.t-mm.b,fill:'transparent'}); hover(r,`${o.p}-day cycle${on?' (dominant)':''}`); svg.appendChild(r); });
-      [2,7,14,30,60].filter(p=>p<=pM).forEach(p=>txt(svg,X(p),MH-5,p+'d',{'text-anchor':'middle','font-size':9,fill:p===7?'#c2410c':'#9a9ea6'}));
-      txt(svg,X(pmax.p)+4,mm.t+10,`peak ${pmax.p} d`,{'font-size':9.5,fill:'#111318','font-weight':600}); } }
-  { const svg=svgIn('c-D',MW,MH,'Wavelet'), N=L.length, PER=[28,21,14,10,7,5,3,2], COLS=Math.min(26,N), cd=N/COLS; let mag=PER.map(()=>[]),maxM=0;
-    for(let r=0;r<PER.length;r++)for(let c=0;c<COLS;c++){const v=coef(xz,PER[r],Math.round(c*cd+cd/2));mag[r][c]=v;if(v>maxM)maxM=v;}
-    const gh=MH-mm.b-mm.t, rh=gh/PER.length, cw=(MW-mm.l-mm.r)/COLS, LOW=[239,236,228],HIGH=[32,34,39],BG=[255,255,255];
-    for(let r=0;r<PER.length;r++){ if(r%2===0) txt(svg,mm.l-4,mm.t+r*rh+rh/2+3,PER[r]+'d',{'text-anchor':'end','font-size':8.5});
-      for(let c=0;c<COLS;c++){ const ctr=c*cd+cd/2, ef=Math.SQRT2*PER[r]*CONV, coi=ctr<ef||ctr>(N-1-ef); let col=mix(LOW,HIGH,Math.pow(mag[r][c]/(maxM||1),0.6)); if(coi)col=mix(col,BG,.72);
-        const rc=S_('rect',{x:mm.l+c*cw+.5,y:mm.t+r*rh+.5,width:cw-1,height:rh-1,rx:1,fill:`rgb(${col})`}); hover(rc,`${PER[r]}-day rhythm around ${fmtD(dates[Math.min(N-1,Math.round(ctr))])}${coi?' (edge: low confidence)':''}`); svg.appendChild(rc); } }
-    miniDates(svg,i=>mm.l+i/(N-1)*(MW-mm.l-mm.r),dates); }
-  { const svg=svgIn('c-E',MW,MH,'Forecast'), N=L.length, h=28, {fc,lo,hi}=holtWinters(L,7,.3,.05,.3,h), T=N-1+h;
-    const top=niceMax(Math.min(Math.max(...L,...hi),Math.max(...L)*1.6)*1.05), X=d=>mm.l+d/T*(MW-mm.l-mm.r), Y=lin(0,top,MH-mm.b,mm.t), cl=v=>Math.min(v,top);
-    [0,top].forEach(t=>{hline(svg,mm.l,MW-mm.r,Y(t)); txt(svg,mm.l-4,Y(t)+3,fmtK(t),{'text-anchor':'end','font-size':9});});
-    let d='M'+X(N-1)+' '+Y(L[N-1]); for(let k=1;k<=h;k++) d+=' L'+X(N-1+k)+' '+Y(cl(hi[k-1])); for(let k=h;k>=1;k--) d+=' L'+X(N-1+k)+' '+Y(lo[k-1]); d+=' Z';
-    svg.appendChild(S_('path',{d,fill:'#f3d9cb',opacity:.8}));
-    svg.appendChild(S_('path',{d:pathOf(L,X,Y),fill:'none',stroke:'#31343c','stroke-width':1}));
-    svg.appendChild(S_('path',{d:pathOf([...new Array(N-1).fill(null),L[N-1],...fc],X,Y),fill:'none',stroke:'#e4571f','stroke-width':1.4,'stroke-dasharray':'4 3'}));
-    txt(svg,X(0),MH-5,fmtD(dates[0]),{'font-size':9}); txt(svg,X(T),MH-5,'+28 d',{'text-anchor':'end','font-size':9}); }
-  return {P};
-}
-
 /* ---------- daily load (bars) + ACWR, always real data ---------- */
 function drawLoad(ser,i0,i1){
-  const W=720,H=300,L=46,R=70,T=16,B=28, M=METRICS[st.m];
+  const W=1040,H=300,L=46,R=70,T=16,B=28, M=METRICS[st.m];
   const svg=svgIn('c-load',W,H,'Daily load'); const n=i1-i0+1, vals=ser.load.slice(i0,i1+1), ma=ser.ma7.slice(i0,i1+1);
   const mx=niceMax(Math.max(...vals,...ma,1)*1.05), x=lin(0,Math.max(1,n-1),L+6,W-R-6), y=lin(0,mx,H-B,T);
   [0,.5,1].forEach(f=>{hline(svg,L,W-R,y(f*mx)); txt(svg,L-6,y(f*mx)+4,fmtK(f*mx),{'text-anchor':'end'});});
@@ -486,19 +436,28 @@ function drawLoad(ser,i0,i1){
   const hw=(W-L-R)/n; for(let k=0;k<n;k++){ const i=i0+k, r=S_('rect',{x:x(k)-hw/2,y:T,width:hw,height:H-B-T,fill:'transparent'});
     hover(r,()=>`<b>${fmtDL(CAL[i])}</b>${ser.mday[i]?' · '+(fixLabel(CAL[i])||'match'):''}<br>${ser.had[i]?n0(ser.load[i])+' '+M.unit:'no session'}<br>7-day avg ${n0(ser.ma7[i])} ${M.unit}`); svg.appendChild(r); }
 }
-function drawACWR(ser,i0,i1){
-  const W=420,H=300,L=34,R=40,T=16,B=28; const svg=svgIn('c-acwr',W,H,'ACWR');
-  const vals=ser.acwr.slice(i0,i1+1), n=vals.length, ok=vals.filter(v=>v!=null);
-  const lo=Math.min(.4,...ok.map(v=>v-.1)), hi=Math.max(1.8,...ok.map(v=>v+.1)), x=lin(0,Math.max(1,n-1),L+4,W-R), y=lin(lo,hi,H-B,T);
-  svg.appendChild(S_('rect',{x:L,y:y(1.3),width:W-R-L,height:y(.8)-y(1.3),fill:'#e9f1e9'}));
-  [.5,1,1.5].filter(t=>t>lo&&t<hi).forEach(t=>{hline(svg,L,W-R,y(t)); txt(svg,L-6,y(t)+4,t.toFixed(1),{'text-anchor':'end'});});
-  const base=21-i0; if(base>0){ svg.appendChild(S_('rect',{x:L,y:T,width:Math.min(W-R,x(Math.min(base,n-1)))-L,height:H-B-T,fill:'#f6f4ef',opacity:.75})); txt(svg,L+6,T+12,'baseline building',{'font-size':10}); }
-  svg.appendChild(S_('path',{d:pathOf(vals,x,y),fill:'none',stroke:'#6b7078','stroke-width':1.8,'stroke-linejoin':'round'}));
-  vals.forEach((v,k)=>{ if(v==null||(v>=.8&&v<=1.3)||k<base) return; svg.appendChild(S_('circle',{cx:x(k),cy:y(v),r:3.2,fill:v>1.3?'#e4571f':'#9a9ea6'})); });
-  const lv=vals[n-1]; if(lv!=null){ svg.appendChild(S_('circle',{cx:x(n-1),cy:y(lv),r:5,fill:'#1a1c22'})); txt(svg,x(n-1)+8,y(lv)+4,lv.toFixed(2),{fill:'#1a1c22','font-weight':600,'font-size':12}); }
-  txt(svg,x(0),H-8,fmtD(CAL[i0])); txt(svg,x(n-1),H-8,fmtD(CAL[i1]),{'text-anchor':'end'});
-  const hw=(W-L-R)/n; for(let k=0;k<n;k++){ const i=i0+k, v=vals[k], r=S_('rect',{x:x(k)-hw/2,y:T,width:hw,height:H-B-T,fill:'transparent'});
-    hover(r,()=>`<b>${fmtDL(CAL[i])}</b><br>ACWR ${v==null?'—':v.toFixed(2)}${i<21?' (baseline building)':''}`); svg.appendChild(r); }
+/* ---------- C: rolling vs EWMA ACWR on the same series as B, with B's changepoints ---------- */
+function ewmaACWR(a){ const la=2/(7+1), lc=2/(28+1); let ea=0,ec=0;            // Williams et al. (2017)
+  return a.map(v=>{ ea=la*v+(1-la)*ea; ec=lc*v+(1-lc)*ec; return ec>0?ea/ec:null; }); }
+function rollACWR(a){ const r=(w,i)=>mean(a.slice(Math.max(0,i-w+1),i+1)); return a.map((_,i)=>{const c=r(28,i); return c>0?r(7,i)/c:null;}); }
+function drawAC(R,E,base,dates,F){
+  const N=R.length, W=1040, H=270, m={l:50,r:18,t:30,b:28}, svg=svgIn('c-AC',W,H,'ACWR vs changepoint');
+  const ok=[...R,...E].filter((v,i)=>v!=null&&(i%N)>=base);
+  const lo=Math.min(.4,...ok.map(v=>v-.1)), hi=Math.max(1.8,...ok.map(v=>v+.1)), X=d=>m.l+d/Math.max(1,N-1)*(W-m.l-m.r), Y=lin(lo,hi,H-m.b,m.t);
+  svg.appendChild(S_('rect',{x:m.l,y:Y(1.3),width:W-m.l-m.r,height:Y(.8)-Y(1.3),fill:'#e9f1e9'}));
+  [.5,1,1.5].filter(t=>t>lo&&t<hi).forEach(t=>{hline(svg,m.l,W-m.r,Y(t)); txt(svg,m.l-6,Y(t)+4,t.toFixed(1),{'text-anchor':'end'});});
+  if(base>0){ svg.appendChild(S_('rect',{x:m.l,y:m.t,width:Math.min(X(Math.min(base,N-1)),W-m.r)-m.l,height:H-m.b-m.t,fill:'#f6f4ef',opacity:.8})); txt(svg,m.l+6,m.t+12,'baseline building',{'font-size':10}); }
+  const step=Math.max(1,Math.round(N/9)); for(let i=0;i<N;i+=step) txt(svg,X(i),H-9,fmtD(dates[i]),{'text-anchor':'middle'});
+  F.cps.forEach((i,k)=>{ svg.appendChild(S_('line',{x1:X(i),x2:X(i),y1:m.t-6,y2:H-m.b,stroke:'#111318','stroke-width':1.6}));
+    txt(svg,X(i),m.t-12,`${fmtD(dates[i])} · ${signed(pct(F.segs[k+1].mean,F.segs[k].mean))}`,{'text-anchor':'middle',fill:'#111318','font-weight':600,'font-size':11}); });
+  const cut=a=>a.map((v,i)=>i<base?null:v);
+  [[R,'#6b7078'],[E,'#e4571f']].forEach(([a,c])=>{ svg.appendChild(S_('path',{d:pathOf(cut(a),X,Y),fill:'none',stroke:c,'stroke-width':2,'stroke-linejoin':'round'}));
+    a.forEach((v,i)=>{ if(i<base||v==null||(v>=.8&&v<=1.3)) return; svg.appendChild(S_('circle',{cx:X(i),cy:Y(v),r:3,fill:c})); }); });
+  const hw=(W-m.l-m.r)/N; for(let i=0;i<N;i++){ const r=S_('rect',{x:X(i)-hw/2,y:m.t,width:hw,height:H-m.b-m.t,fill:'transparent'});
+    hover(r,()=>`<b>${fmtDL(dates[i])}</b>${i<base?' (baseline building)':''}<br>rolling ACWR ${R[i]==null?'—':R[i].toFixed(2)}<br>EWMA ACWR ${E[i]==null?'—':E[i].toFixed(2)}`); svg.appendChild(r); }
+  const out=a=>a.filter((v,i)=>i>=base&&v!=null&&(v<.8||v>1.3)).length;
+  const near=a=>F.cps.filter(c=>a.some((v,i)=>i>=base&&v!=null&&(v<.8||v>1.3)&&Math.abs(i-c)<=7)).length;
+  return {outR:out(R),outE:out(E),days:Math.max(0,N-base),nearR:near(R),nearE:near(E)};
 }
 
 /* ============================================================================
@@ -507,8 +466,8 @@ function drawACWR(ser,i0,i1){
 function buildControls(){
   seg('f-sq',[{v:'all',l:'All'},{v:'Senior',l:'Senior'},{v:'Reserve',l:'Reserve'}],st.sq,v=>{st.sq=v;render();});
   const hl=new Set(Object.values(INFO).map(i=>i.line)), hg=new Set(Object.values(INFO).map(i=>i.group));
-  sel('f-line',[{v:'all',l:'All positions'}].concat(LINES.filter(l=>hl.has(l)).map(l=>({v:l,l}))),st.line,v=>{st.line=v;render();});
-  sel('f-grp',[{v:'all',l:'All playing groups'}].concat(GROUPS.filter(g=>hg.has(g)).map(g=>({v:g,l:g}))),st.grp,v=>{st.grp=v;render();});
+  sel('f-line',[{v:'all',l:'All positions'}].concat(ordered(hl,LINES).map(l=>({v:l,l}))),st.line,v=>{st.line=v;render();});
+  sel('f-grp',[{v:'all',l:'All playing groups'}].concat(ordered(hg,GROUPS).map(g=>({v:g,l:g}))),st.grp,v=>{st.grp=v;render();});
   const counts={}; S.forEach(r=>counts[r.ath]=(counts[r.ath]||0)+1);
   const pool=Q.athletes.filter(inPool); if(st.a!=='squad'&&!pool.includes(st.a)) pool.unshift(st.a);
   const sqLabel=(()=>{const a=st.a; st.a='squad'; const w=who(); st.a=a; return w;})();
@@ -532,8 +491,15 @@ function render(){
   let L,dates,unit;
   if(st.scn==='real'){ L=ser.load.slice(i0,i1+1); dates=CAL.slice(i0,i1+1); unit=M.unit; }
   else { L=generate(st.scn); dates=L.map((_,i)=>iso(Date.UTC(2025,11,1)+i*DAY)); unit='AU'; }
-  const F=drawF(L,dates,unit), X=drawMinis(L,dates);
-  drawLoad(ser,i0,i1); drawACWR(ser,i0,i1);
+  const F=drawF(L,dates,unit);
+  // ACWR on the same series as B: real data uses the whole season so the 28-day window is never cut short
+  let R,E,base;
+  if(st.scn==='real'){ R=rollACWR(ser.load).slice(i0,i1+1); E=ewmaACWR(ser.load).slice(i0,i1+1); base=Math.max(0,21-i0); }
+  else { R=rollACWR(L); E=ewmaACWR(L); base=21; }
+  const AC=drawAC(R,E,base,dates,F);
+  drawLoad(ser,i0,i1);
+  document.getElementById('h-AC').textContent=AC.days?`Rolling ACWR left the band on ${AC.outR} of ${AC.days} days and EWMA ACWR on ${AC.outE}; changepoint analysis found ${F.cps.length} shift${F.cps.length!==1?'s':''}`:'Not enough history yet for a stable ratio';
+  document.getElementById('s-AC').textContent=`${st.scn==='real'?who():st.scn==='good'?'Synthetic well-periodised athlete':'Synthetic sporadically-loaded athlete'} · ${F.cps.length?`${AC.nearR} of the ${F.cps.length} shift${F.cps.length!==1?'s':''} had a rolling-ACWR flag within a week (EWMA: ${AC.nearE}) · `:''}ACWR reacts to single spikes and rest days; changepoints mark sustained shifts in the 7-day load.`;
 
   const lab=st.scn==='real'?`${who()} · daily ${M.label.toLowerCase()} (${M.unit})`:(st.scn==='good'?'Synthetic well-periodised athlete (AU)':'Synthetic sporadically-loaded athlete (AU)');
   document.getElementById('s-F').textContent=`${lab} · ${F.cps.length} abrupt shift${F.cps.length!==1?'s':''} in the 7-day load${F.cps.length?' ('+F.cps.map(i=>fmtD(dates[i])).join(', ')+')':''} · ${F.spikes.length} spike days · hover any day for its date and values`;
@@ -548,8 +514,6 @@ function render(){
   document.getElementById('h-load').textContent=total?`Match days carry ${mShare}% of ${M.short} in this period${rShare?` — ${rShare}% from reserve games`:''}`:`No ${M.short} recorded in this period`;
   document.getElementById('s-load').innerHTML=`Daily ${M.label.toLowerCase()} (${M.unit}) · ${who()} · <b style="color:var(--senior)">senior match</b> · <b style="color:var(--reserve)">reserve match</b> · <b style="color:#a59e8f">training</b> · <b style="color:var(--accent-ink)">7-day avg</b>`;
   const ac=ser.acwr[i1], recent=ser.had.slice(Math.max(0,i1-27),i1+1).filter(Boolean).length, acOK=ac!=null&&recent>=4&&i1>=21;
-  const acV=ser.acwr.slice(Math.max(i0,21),i1+1).filter(v=>v!=null), inBand=acV.length?Math.round(acV.filter(v=>v>=.8&&v<=1.3).length/acV.length*100):null, nHigh=acV.filter(v=>v>1.3).length;
-  document.getElementById('h-acwr').textContent=inBand==null?'Not enough history for a stable ratio':`In the target band on ${inBand}% of days${nHigh?` — ${nHigh} day${nHigh>1?'s':''} above 1.3`:''}`;
 
   // A: KPI cards
   const wk=ser.load.slice(Math.max(0,i1-6),i1+1).reduce((a,b)=>a+b,0), pwk=i1>=7?ser.load.slice(Math.max(0,i1-13),i1-6).reduce((a,b)=>a+b,0):null;
@@ -580,11 +544,11 @@ function render(){
   if(st.scn==='real'){
     if(F.cps.length){ const last=F.cps[F.cps.length-1], k=F.cps.length-1; bl.push(`Most recent changepoint: ${fmtD(dates[last])} — the 7-day ${M.short} moved from ${n0(F.segs[k].mean)} to ${n0(F.segs[k+1].mean)} ${M.unit}/day (${signed(pct(F.segs[k+1].mean,F.segs[k].mean))}).`); }
     else bl.push(`No changepoint in the 7-day ${M.short} for this period — load has been steady rather than stepped.`);
-    if(X.P.length){ const top=X.P.reduce((a,b)=>b.power>a.power?b:a); bl.push(`Strongest rhythm in the spectrum is ${top.p} days${top.p>=6&&top.p<=8?' — the weekly pattern is there':''}${(i1-i0+1)<84?`; with ${i1-i0+1} days of data, cycles of 14 d+ are low-confidence`:''}.`); }
-  } else bl.push(`Showing the ${st.scn==='good'?'well-periodised':'sporadic'} synthetic example in B and C1–C5 for comparison; the load and ACWR charts below stay on our data.`);
+    if(AC.days) bl.push(`ACWR flagged ${AC.outR} day${AC.outR!==1?'s':''} (rolling) and ${AC.outE} (EWMA) outside 0.8–1.3, against ${F.cps.length} sustained shift${F.cps.length!==1?'s':''} found by changepoint analysis.`);
+  } else bl.push(`Showing the ${st.scn==='good'?'well-periodised':'sporadic'} synthetic example in B and C for comparison; the daily load chart stays on our data.`);
   if(total) bl.push(`Match days carry ${mShare}% of the period's ${M.short}${rShare?` (${rShare}% from reserve games)`:''}.`);
   document.getElementById('bullets').innerHTML=bl.map(b=>`<li>${b}</li>`).join('');
-  document.getElementById('foot').innerHTML=`Source: STATSports 10&nbsp;Hz exports via the pipeline; 'Entire Session' rows. Squad average = mean of the players in the current filter who recorded that day; non-session days are zero. Grade membership = played at least one match of that grade. ACWR = rolling 7-day ÷ 28-day mean over the full season (first 21 days are a baseline). Toolkit (B, C1–C5) after Schelling et&nbsp;al. (2025): 7-day MA / EWMA, periodogram, Morlet wavelet (ω₀ = 6), additive Holt-Winters, binary-segmentation changepoints on the 7-day series. TAL = Σ|Δv| between consecutive 10&nbsp;Hz Filtered Speed samples, in m·s⁻¹ (≈ ∫|a|&nbsp;dt; daily TAL ÷ minutes ÷ 60 = mean absolute acceleration, m·s⁻²). Players are pseudonymised.`;
+  document.getElementById('foot').innerHTML=`Source: STATSports 10&nbsp;Hz exports via the pipeline; 'Entire Session' rows. Squad average = mean of the players in the current filter who recorded that day; non-session days are zero. Grade membership = played at least one match of that grade. ACWR = rolling 7-day ÷ 28-day mean over the full season (first 21 days are a baseline). Changepoints (B) after Schelling et&nbsp;al. (2025): binary segmentation on the 7-day series. EWMA ACWR (C) after Williams et&nbsp;al. (2017): exponentially weighted 7-day ÷ 28-day load. TAL = Σ|Δv| between consecutive 10&nbsp;Hz Filtered Speed samples, in m·s⁻¹ (≈ ∫|a|&nbsp;dt; daily TAL ÷ minutes ÷ 60 = mean absolute acceleration, m·s⁻²). Players are pseudonymised.`;
 }
 
 function init(){

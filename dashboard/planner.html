@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+  .pl-bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:12px}
+  .pl-bar .fld{margin:0}
+  .pl-bar .fld select{width:auto;min-width:210px}
+  .pl-week{margin-top:6px}
+  .pl-wh{font-family:var(--sora);font-weight:600;font-size:13px;margin:14px 0 6px}
+  .pl-row{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch}
+  .pl-scroll{overflow-x:auto;flex:1 1 600px;min-width:0}
+  .pl-grid{display:grid;grid-template-columns:72px repeat(7,minmax(94px,1fr));column-gap:6px;row-gap:7px;align-items:center;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:760px}
+  .pl-lab{font-size:11.5px;font-weight:600;color:var(--muted)}
+  .pl-barcell{height:118px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;border-bottom:1px solid var(--line)}
+  .pl-b{width:58%;border-radius:4px 4px 0 0}
+  .pl-v{font-size:11.5px;color:var(--muted)}
+  .pl-day{text-align:center;line-height:1.3}
+  .pl-day b{display:block;font-weight:600}
+  .pl-day span{font-size:11.5px;color:var(--faint)}
+  .pl-grid select,.pl-grid input{width:100%;font:inherit;font-size:12.5px;color:var(--ink);border:1px solid var(--line);border-radius:7px;background:#fff;height:30px;padding:0 6px;min-width:0}
+  .pl-grid input[type=time]{padding:0 3px;font-size:12px}
+  .pl-grid input[type=number]{text-align:center;-moz-appearance:textfield;padding:0 2px}
+  .pl-grid input[type=number]::-webkit-outer-spin-button,.pl-grid input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .pl-step{display:grid;grid-template-columns:22px minmax(0,1fr) 22px;gap:3px;align-items:center}
+  .pl-step button{height:30px;padding:0;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-size:14px;cursor:pointer}
+  .pl-step button:hover{border-color:#cfcabf}
+  .pl-c{text-align:center;color:var(--muted)}
+  .pl-c.bad{color:var(--accent-ink);font-weight:600}
+  .pl-sum{flex:0 0 172px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+  .pl-sum .k-val.warn{color:var(--accent-ink)}
+  .pl-flags{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+  .pl-flags li{font-size:12.5px;color:var(--accent-ink);padding-left:15px;position:relative}
+  .pl-flags li::before{content:'';position:absolute;left:0;top:6px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .pl-flags:empty{display:none}
+  .pl-pred{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .pl-pred b{font-family:var(--sora);font-weight:600;font-size:18px;color:var(--ink);margin-left:4px}
+  .pl-pred b.hi{color:var(--accent-ink)}
+  .pl-grid :is(select,input,button):focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span><div><div class="title">Senior Football — Performance</div><div class="sub">STATSports GPS</div></div></div>
+    <nav class="tabs" aria-label="Pages">
+      <a href="index.html" data-page="index.html">Session analysis</a>
+      <a href="load.html" data-page="load.html">Load monitoring</a>
+      <a href="planner.html" data-page="planner.html" aria-current="page">Planner</a>
+    </nav>
+    <span class="badge">Pipeline output</span>
+  </header>
+
+  <div class="shell">
+    <aside class="side" aria-label="Filters">
+      <section>
+        <h3><span class="n">1</span>Team / player</h3>
+        <div class="fld"><span class="lbl">Squad</span><div class="seg" id="f-sq" role="group" aria-label="Squad"></div></div>
+        <div class="fld"><label for="f-a">Player</label><select id="f-a"></select></div>
+        <div class="fld"><label for="f-line">Position</label><select id="f-line"></select></div>
+        <div class="fld"><label for="f-grp">Playing group</label><select id="f-grp"></select></div>
+      </section>
+      <section>
+        <h3><span class="n">2</span>Physical metric</h3>
+        <div class="seg" id="f-m" role="group" aria-label="Load metric"></div>
+        <div class="hint">The planner's bars, inputs and predicted ACWR follow this metric.</div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <div class="sec"><span class="l">A</span><span class="t">Plan</span><span class="d" id="d-A"></span><span class="rule"></span></div>
+      <div class="panel">
+        <div class="pl-bar">
+          <div class="fld"><label for="p-start">Starting week</label><select id="p-start"></select></div>
+          <div class="fld"><span class="lbl">Weeks</span><div class="seg" id="p-n" role="group" aria-label="Weeks to plan"></div></div>
+          <button class="btn" id="p-reset">Reset to suggestion</button>
+        </div>
+        <p class="p-sub" id="p-sum"></p>
+        <div id="p-weeks"></div>
+        <ul class="pl-flags" id="p-flags"></ul>
+      </div>
+
+      <div class="sec"><span class="l">B</span><span class="t">Predicted ACWR</span><span class="d">the season so far plus the plan · updates as you edit</span><span class="rule"></span></div>
+      <div class="panel">
+        <div class="p-head"><div><h2 id="h-B"></h2><p class="p-sub">Weekly ACWR = the week ÷ the mean of the previous four · EWMA ACWR read at the end of each week · <span style="color:var(--ok)">band 0.8–1.3</span></p></div>
+          <div class="pl-pred" id="p-pred"></div></div>
+        <div id="c-B"></div>
+        <div class="legend"><span><i style="background:#6b7078"></i>rolling ACWR</span><span><i style="background:#e4571f"></i>EWMA ACWR</span>
+          <span><i style="background:repeating-linear-gradient(90deg,#6b7078 0 4px,transparent 4px 7px)"></i>planned weeks</span><span><i style="background:var(--ok-band);height:10px"></i>0.8–1.3</span></div>
+      </div>
+      <p class="foot">Pitch sessions only; recovery and primer work is gym-based and not tracked. Suggested sessions by days from the last match and to the next: ≈75% of a match's total distance on MD-4, ≈50% on MD-2, ≈60% in a short week, nothing on MD+1, MD+2 or MD-1. A match is the selection's average per player-match (at least 40 min). HSR, sprint and TAL start from the selection's training ratio to distance and can be set directly. Weeks with no fixture get a match on the weekday of the last senior game; change any day to Rest, Pitch or Match. HSR and sprint guides of 0.6–0.9× and 0.6–1.1× a match per week follow Buchheit et&nbsp;al. (2023). These are guides, not safety limits. Players are pseudonymised.</p>
+    </main>
+  </div>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script src="../outputs/dashboard_data.js"></script>
+<script src="common.js"></script>
+<script>
+/* ============================================================================
+   PLANNER - suggest a week (or up to four) of pitch sessions around the fixtures,
+   let the coach change any day, and show the knock-on effect on ACWR
+   ========================================================================== */
+const st={sq:'all', a:'squad', line:'all', grp:'all', m:'td', start:null, n:1};
+const KEYS=['td','hsr','spr','tal'];
+const STEP={td:250,hsr:50,spr:10,tal:100};
+const GUIDE={hsr:[0.6,0.9],spr:[0.6,1.1]};
+const TYPES={REST:'Rest',PITCH:'Pitch',MATCH:'Match'};
+let S=[], CAL=[], SEASON=[null,null], MON0=null, EDITS=new Map(), EDIT_KEY='';
+
+function prepare(){
+  const s=Q.sessions;
+  S=s.a.map((a,i)=>({ath:Q.athletes[a], d:s.d[i], t:s.t[i], td:s.dist[i], hsr:s.hsr[i], spr:s.spr[i], tal:(s.tal||[])[i]||0, dur:(s.dur||[])[i]||0}));
+  const ds=S.map(r=>r.d).sort(); SEASON=[ds[0],ds[ds.length-1]];
+  CAL=[]; for(let d=SEASON[0]; d<=SEASON[1]; d=addDays(d,1)) CAL.push(d);
+  MON0=mondayOf(SEASON[0]);
+}
+const dow=s=>new Date(s+'T00:00:00Z').getUTCDay();
+const mondayOf=s=>addDays(s,-((dow(s)+6)%7));
+const dayDiff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/DAY);
+const wkend=s=>dow(s)===0||dow(s)===6;
+const hrs=(a,b)=>(Date.parse(b.d+'T'+b.tm+':00Z')-Date.parse(a.d+'T'+a.tm+':00Z'))/3.6e6;
+const hasTAL=()=>S.some(r=>r.tal>0);
+function inPool(a){
+  if(st.sq!=='all'&&!(GR[a]&&GR[a].has(st.sq))) return false;
+  const i=INFO[a]||{};
+  if(st.line!=='all'&&i.line!==st.line) return false;
+  if(st.grp!=='all'&&i.group!==st.grp) return false;
+  return true;
+}
+const mine=r=>st.a==='squad'?inPool(r.ath):r.ath===st.a;
+function who(){ if(st.a!=='squad') return st.a;
+  const bits=[st.sq==='all'?'Squad':st.sq+' squad']; if(st.line!=='all') bits.push(st.line); if(st.grp!=='all') bits.push(st.grp);
+  return bits.join(' · ')+' average'; }
+
+/* history: daily load for the selection (squad = mean of players who recorded that day), keyed by date */
+function histLoad(k){
+  const per={}; S.forEach(r=>{ if(!mine(r)) return; (per[r.d]=per[r.d]||{}); per[r.d][r.ath]=(per[r.d][r.ath]||0)+(r[k]||0); });
+  const out={}; Object.keys(per).forEach(d=>{ out[d]=st.a==='squad'?mean(Object.values(per[d])):per[d][st.a]||0; }); return out;
+}
+/* a match = the selection's average per player-match (>= 40 min); training ratio = metric per metre of distance */
+function references(){
+  const rows=S.filter(mine), M=rows.filter(r=>r.t==='M'&&r.dur>=40), T=rows.filter(r=>r.t!=='M');
+  const ref={}, ratio={}, tdT=T.reduce((a,r)=>a+r.td,0);
+  KEYS.forEach(k=>{ ref[k]=M.length?mean(M.map(r=>r[k])):0; ratio[k]=k==='td'?1:tdT?T.reduce((a,r)=>a+r[k],0)/tdT:0; });
+  return {ref,ratio,matches:M.length};
+}
+/* pitch-session share of a match's distance by days since the last match (k) and to the next (n) */
+function frac(k,n){ const G=k+n;
+  if(k<3||n<2) return 0;
+  if(G>=7){ const r=n%7; return r===4?0.75:(r===2||r===6)?0.5:0; }
+  if(n===3) return 0.6;
+  if(G===5&&n===2) return 0.5;
+  return 0; }
+const round=(v,k)=>k==='td'?Math.round(v/100)*100:Math.round(v/10)*10;
+
+function weekOptions(){ const out=[]; const last=mondayOf(addDays(SEASON[1],1));
+  for(let w=addDays(MON0,28); w<=last; w=addDays(w,7)) out.push(w); return out; }
+
+function plan(R){
+  const dates=[]; for(let i=0;i<7*st.n;i++) dates.push(addDays(st.start,i));
+  const end=dates[dates.length-1];
+  const fx=Object.keys(FIX).sort(), senior=fx.filter(d=>gradeOf(d)==='Senior'), mdow=senior.length?dow(senior[senior.length-1]):0;
+  // fixture days, or for weeks past the fixture list a match on the usual weekday
+  const isFx=d=>FIX[d]?(st.sq==='all'||gradeOf(d)===st.sq):(d>fx[fx.length-1]&&dow(d)===mdow);
+  const type0=d=>{ const e=EDITS.get(d); return e&&e.t?e.t:isFx(d)?'MATCH':null; };
+  const prev=fx.filter(d=>d<st.start&&(st.sq==='all'||gradeOf(d)===st.sq)).pop()||null;
+  let after=fx.find(d=>d>end&&(st.sq==='all'||gradeOf(d)===st.sq)); if(!after){ after=addDays(end,1); while(dow(after)!==mdow) after=addDays(after,1); }
+  const md=[prev,...dates.filter(d=>type0(d)==='MATCH'),after].filter(Boolean);
+  return dates.map(d=>{
+    const last=md.filter(x=>x<d).pop(), nxt=md.find(x=>x>d);
+    const k=last?dayDiff(last,d):99, n=nxt?dayDiff(d,nxt):99, f=frac(k,n), e=EDITS.get(d)||{};
+    const sugg=isFx(d)?'MATCH':f>0?'PITCH':'REST', t=e.t||sugg;
+    const td=t==='PITCH'?(e.td!=null?e.td:round((f||0.6)*R.ref.td,'td')):0;
+    return {d,k,n,sugg,t,td,ov:e.ov||{},tm:e.tm||(t==='MATCH'&&wkend(d)?'14:00':'19:30'),prev};
+  });
+}
+const val=(day,k,R)=>day.t==='MATCH'?R.ref[k]:day.t!=='PITCH'?0:k==='td'?day.td:day.ov[k]!=null?day.ov[k]:round(day.td*R.ratio[k],k);
+function edit(d,patch){ const e=Object.assign({},EDITS.get(d)||{},patch);
+  Object.keys(e).forEach(k=>{ if(e[k]==null||(k==='ov'&&!Object.keys(e.ov).length)) delete e[k]; });
+  if(Object.keys(e).length) EDITS.set(d,e); else EDITS.delete(d); render(); }
+
+/* weekly ACWR: week total ÷ mean of the previous four; EWMA ACWR (Williams et al.) read at the end of each week */
+function weeklyACWR(H,days,R){
+  const series=[]; for(let d=MON0; d<st.start; d=addDays(d,1)) series.push(H[d]||0);
+  const nHist=series.length/7; days.forEach(x=>series.push(val(x,st.m,R)));
+  const la=2/8, lc=2/29; let ea=0,ec=0; const ew=series.map(v=>{ea=la*v+(1-la)*ea; ec=lc*v+(1-lc)*ec; return ec>0?ea/ec:null;});
+  const tot=[]; for(let w=0;w<series.length/7;w++) tot.push(series.slice(w*7,w*7+7).reduce((a,b)=>a+b,0));
+  const out=[]; for(let w=4;w<tot.length;w++){ const c=mean(tot.slice(w-4,w)); out.push({wk:addDays(MON0,w*7),r:c>0?tot[w]/c:null,e:ew[w*7+6],planned:w>=nHist}); }
+  return out;
+}
+function drawB(rows){
+  const W=1040,H=250,m={l:44,r:20,t:16,b:28}, svg=svgIn('c-B',W,H,'Predicted ACWR');
+  const vals=rows.flatMap(o=>[o.r,o.e]).filter(v=>v!=null);
+  const lo=Math.min(.4,...vals.map(v=>v-.1)), hi=Math.max(1.8,...vals.map(v=>v+.1)), N=rows.length;
+  const X=i=>m.l+(N>1?i/(N-1):.5)*(W-m.l-m.r), Y=lin(lo,hi,H-m.b,m.t);
+  svg.appendChild(S_('rect',{x:m.l,y:Y(1.3),width:W-m.l-m.r,height:Y(.8)-Y(1.3),fill:'#e9f1e9'}));
+  [.5,1,1.5].filter(t=>t>lo&&t<hi).forEach(t=>{hline(svg,m.l,W-m.r,Y(t)); txt(svg,m.l-6,Y(t)+4,t.toFixed(1),{'text-anchor':'end'});});
+  const p0=rows.findIndex(o=>o.planned);
+  if(p0>0) svg.appendChild(S_('rect',{x:(X(p0-1)+X(p0))/2,y:m.t,width:W-m.r-(X(p0-1)+X(p0))/2,height:H-m.b-m.t,fill:'#f6f4ef',opacity:.9}));
+  rows.forEach((o,i)=>txt(svg,X(i),H-9,fmtD(o.wk),{'text-anchor':'middle',fill:o.planned?'#c2410c':'#9a9ea6'}));
+  [['r','#6b7078'],['e','#e4571f']].forEach(([k,c])=>{
+    const hist=rows.map((o,i)=>o.planned?null:o[k]), fut=rows.map((o,i)=>i>=p0-1&&p0>0?o[k]:o.planned?o[k]:null);
+    svg.appendChild(S_('path',{d:pathOf(hist,X,Y),fill:'none',stroke:c,'stroke-width':2.2,'stroke-linejoin':'round'}));
+    svg.appendChild(S_('path',{d:pathOf(fut,X,Y),fill:'none',stroke:c,'stroke-width':2.2,'stroke-dasharray':'5 4'}));
+    rows.forEach((o,i)=>{ if(o[k]==null) return; svg.appendChild(S_('circle',{cx:X(i),cy:Y(o[k]),r:o.planned?5:3,fill:o.planned?'#fff':c,stroke:c,'stroke-width':o.planned?2.4:0})); });
+  });
+  const hw=(W-m.l-m.r)/Math.max(1,N-1);
+  rows.forEach((o,i)=>{ const r=S_('rect',{x:X(i)-hw/2,y:m.t,width:hw,height:H-m.b-m.t,fill:'transparent'});
+    hover(r,()=>`<b>${o.planned?'Planned · ':''}week of ${fmtD(o.wk)}</b><br>rolling ACWR ${o.r==null?'—':o.r.toFixed(2)}<br>EWMA ACWR ${o.e==null?'—':o.e.toFixed(2)}`); svg.appendChild(r); });
+}
+
+/* ============================================================================
+   CONTROLS + RENDER
+   ========================================================================== */
+function buildControls(){
+  seg('f-sq',[{v:'all',l:'All'},{v:'Senior',l:'Senior'},{v:'Reserve',l:'Reserve'}],st.sq,v=>{st.sq=v;render();});
+  const hl=new Set(Object.values(INFO).map(i=>i.line)), hg=new Set(Object.values(INFO).map(i=>i.group));
+  sel('f-line',[{v:'all',l:'All positions'}].concat(ordered(hl,LINES).map(l=>({v:l,l}))),st.line,v=>{st.line=v;render();});
+  sel('f-grp',[{v:'all',l:'All playing groups'}].concat(ordered(hg,GROUPS).map(g=>({v:g,l:g}))),st.grp,v=>{st.grp=v;render();});
+  const counts={}; S.forEach(r=>counts[r.ath]=(counts[r.ath]||0)+1);
+  const pool=Q.athletes.filter(inPool); if(st.a!=='squad'&&!pool.includes(st.a)) pool.unshift(st.a);
+  const sqLabel=(()=>{const a=st.a; st.a='squad'; const w=who(); st.a=a; return w;})();
+  sel('f-a',[{v:'squad',l:sqLabel}].concat(pool.map(a=>({v:a,l:`${a} · ${(INFO[a]||{}).line||'—'} · ${counts[a]||0} sess.`}))),st.a,v=>{st.a=v;render();});
+  const tal=hasTAL(); if(st.m==='tal'&&!tal) st.m='td';
+  seg('f-m',KEYS.map(k=>({v:k,l:METRICS[k].short,disabled:k==='tal'&&!tal,title:METRICS[k].label})),st.m,v=>{st.m=v;render();});
+  const weeks=weekOptions(); if(!weeks.includes(st.start)) st.start=weeks[weeks.length-1];
+  sel('p-start',weeks.map(w=>{ const f=Object.keys(FIX).filter(d=>d>=w&&d<=addDays(w,6)); return {v:w,l:`Mon ${fmtD(w)}${f.length?' · '+f.map(d=>gradeOf(d)+' '+fmtDL(d).split(' ')[0]).join(', '):w>SEASON[1]?' · next week':''}`}; }),st.start,v=>{st.start=v;render();});
+  seg('p-n',[1,2,3,4].map(n=>({v:n,l:n===1?'1 week':String(n)})),st.n,v=>{st.n=+v;render();});
+  document.getElementById('p-reset').onclick=()=>{EDITS=new Map();render();};
+  writeHash({a:st.a,g:st.sq,line:st.line,grp:st.grp,m:st.m,start:st.start,n:st.n});
+}
+
+function render(){
+  buildControls();
+  const key=[st.sq,st.a,st.line,st.grp].join('|'); if(key!==EDIT_KEY){ EDITS=new Map(); EDIT_KEY=key; }
+  const M=METRICS[st.m], R=references(), H=histLoad(st.m), days=plan(R), ref=R.ref[st.m];
+  document.getElementById('d-A').textContent=`${who()} · ${M.label.toLowerCase()} · ${st.n} week${st.n>1?'s':''} from ${fmtD(st.start)}`;
+  document.getElementById('p-sum').innerHTML=`Suggested from the microcycle and sized to ${who()}'s match average (<b>${n0(R.ref.td)} m</b> over ${R.matches} player-matches). `+
+    (st.m==='td'?`Change a session's distance and its HSR, sprint and TAL follow it; set those directly from the Physical metric buttons.`:`${M.short} starts from the training ratio to distance (${n0(R.ratio[st.m]*1000)} ${M.unit} per km) and can be set directly.`);
+
+  // recovery: start to start since the last pitch session or match
+  const prev=days[0].prev, ev=(prev?[{d:prev,tm:wkend(prev)?'14:00':'19:30'}]:[]).concat(days.filter(x=>x.t!=='REST'));
+  ev.forEach((e,i)=>{ if(e.t) e.rec=i?hrs(ev[i-1],e):null; });
+
+  const vmax=Math.max(1,ref,...days.map(x=>val(x,st.m,R))), flags=[], wrap=document.getElementById('p-weeks'); wrap.innerHTML='';
+  for(let w=0;w<st.n;w++){
+    const wd=days.slice(w*7,w*7+7), box=document.createElement('div'); box.className='pl-week'; wrap.appendChild(box);
+    if(st.n>1) box.insertAdjacentHTML('beforeend',`<div class="pl-wh">Week of ${fmtDL(wd[0].d)}</div>`);
+    const row=document.createElement('div'); row.className='pl-row'; box.appendChild(row);
+    const sc=document.createElement('div'); sc.className='pl-scroll'; const g=document.createElement('div'); g.className='pl-grid'; sc.appendChild(g); row.appendChild(sc);
+    const add=(cls,html)=>{ const c=document.createElement('div'); c.className=cls||''; if(html!=null) c.innerHTML=html; g.appendChild(c); return c; };
+    add('pl-lab','');
+    wd.forEach(x=>{ const v=val(x,st.m,R), c=add('pl-barcell'); if(v>0) c.innerHTML=`<div class="pl-v">${fmtK(v)}</div><div class="pl-b" style="height:${Math.round(v/vmax*92)}px;background:${x.t==='MATCH'?'var(--senior)':'var(--accent)'}"></div>`;
+      hover(c,()=>`<b>${fmtDL(x.d)}</b> · ${TYPES[x.t]}<br>${KEYS.map(k=>`${METRICS[k].short} ${n0(val(x,k,R))} ${METRICS[k].unit}`).join('<br>')}`); });
+    add('pl-lab','');
+    wd.forEach(x=>add('pl-day',`<b>${fmtDL(x.d)}</b><span>${x.t==='MATCH'?'MD':x.n<99?'MD-'+x.n:x.k<99?'MD+'+x.k:''}</span>`));
+    add('pl-lab','Session');
+    wd.forEach(x=>{ const s=document.createElement('select'); s.setAttribute('aria-label','Session on '+x.d);
+      s.innerHTML=Object.entries(TYPES).map(([k,l])=>`<option value="${k}">${l}</option>`).join(''); s.value=x.t;
+      s.onchange=()=>edit(x.d,{t:s.value===x.sugg?null:s.value,td:null,ov:null,tm:null}); add('').appendChild(s); });
+    add('pl-lab','Start');
+    wd.forEach(x=>{ const c=add(''); if(x.t==='REST') return; const i=document.createElement('input'); i.type='time'; i.value=x.tm; i.setAttribute('aria-label','Start time '+x.d);
+      i.onchange=()=>{ if(i.value) edit(x.d,{tm:i.value}); }; c.appendChild(i); });
+    add('pl-lab',`${M.short} (${M.unit})`);
+    wd.forEach(x=>{
+      if(x.t==='MATCH'){ add('pl-c',n0(ref)); return; }
+      const c=add(''); if(x.t!=='PITCH') return;
+      const v=val(x,st.m,R), set=nv=>{ nv=Math.max(0,Math.round(nv)); if(st.m==='td') edit(x.d,{td:Math.min(15000,nv)}); else edit(x.d,{ov:Object.assign({},x.ov,{[st.m]:nv})}); };
+      const box=document.createElement('div'); box.className='pl-step';
+      const b=(t,dv,l)=>{ const e=document.createElement('button'); e.textContent=t; e.setAttribute('aria-label',l); e.onclick=()=>set(v+dv); return e; };
+      const i=document.createElement('input'); i.type='number'; i.min='0'; i.step=String(STEP[st.m]); i.value=String(Math.round(v)); i.setAttribute('aria-label',`${M.short} on ${x.d}`);
+      i.onchange=()=>{ const n=Number(i.value); if(Number.isFinite(n)) set(n); };
+      box.append(b('−',-STEP[st.m],'Less'),i,b('+',STEP[st.m],'More')); c.appendChild(box); });
+    add('pl-lab','Recovery');
+    wd.forEach(x=>{ const c=add('pl-c',x.t==='REST'||x.rec==null?'':Math.round(x.rec)+' h'); if(x.t!=='REST'&&x.rec!=null&&x.rec<24) c.classList.add('bad'); });
+
+    // week card
+    const tot=wd.reduce((a,x)=>a+val(x,st.m,R),0), train=wd.reduce((a,x)=>a+(x.t==='PITCH'?val(x,st.m,R):0),0);
+    const act=wd.reduce((a,x)=>a+(H[x.d]||0),0), hasAct=wd.some(x=>x.d<=SEASON[1]);
+    let html=`<div class="kpi"><div class="k-label">Week total · ${M.short}</div><div class="k-val">${n0(tot)}<span class="k-unit">${M.unit}</span></div>${hasAct?`<div class="k-foot">actually done: ${n0(act)} ${M.unit}</div>`:''}</div>`;
+    if(GUIDE[st.m]&&ref){ const x=train/ref, gd=GUIDE[st.m], off=x<gd[0]||x>gd[1];
+      html+=`<div class="kpi"><div class="k-label">Training ÷ match</div><div class="k-val ${off?'warn':''}">${x.toFixed(2)}<span class="k-unit">×</span></div><div class="k-foot">guide ${gd[0]}–${gd[1]}×</div></div>`;
+      if(off) flags.push(`Week of ${fmtD(wd[0].d)}: ${M.short} in training is ${x.toFixed(2)}× a match; guide ${gd[0]}–${gd[1]}×.`); }
+    const card=document.createElement('div'); card.className='pl-sum'; card.innerHTML=html; row.appendChild(card);
+  }
+
+  days.forEach((x,i)=>{
+    if(x.t!=='PITCH') return;
+    const nm=days.find(y=>y.t==='MATCH'&&(y.d>x.d||(y.d===x.d&&y.tm>x.tm)));
+    if(nm){ const h=hrs(x,nm); if(h<48&&x.td>0.6*R.ref.td) flags.push(`${fmtDL(x.d)}: ${n0(x.td)} m session ${Math.round(h)} h before a match.`); }
+    if(x.k===2) flags.push(`${fmtDL(x.d)}: pitch session on MD+2 — a rest or off-feet day is advised.`);
+    if(x.rec!=null&&x.rec<24) flags.push(`${fmtDL(x.d)}: under 24 h since the last pitch session or match.`);
+    const p=days[i-1], big=y=>y&&(y.t==='MATCH'||(y.t==='PITCH'&&y.td>=0.5*R.ref.td));
+    if(big(p)&&big(x)) flags.push(`${fmtDL(p.d)} and ${fmtDL(x.d)}: back-to-back heavy days.`);
+  });
+  const wk=weeklyACWR(H,days,R), planned=wk.filter(o=>o.planned);
+  planned.forEach(o=>{ if(o.r>1.3||o.e>1.3) flags.push(`Week of ${fmtD(o.wk)}: predicted ${M.short} ACWR above 1.3.`); });
+  document.getElementById('p-flags').innerHTML=flags.map(f=>`<li>${f}</li>`).join('');
+
+  drawB(wk);
+  const b=v=>`<b class="${v!=null&&(v>1.3||v<.8)?'hi':''}">${v==null?'—':v.toFixed(2)}</b>`;
+  document.getElementById('p-pred').innerHTML=planned.map(o=>`<span>${st.n>1?fmtD(o.wk)+' · ':''}ACWR${b(o.r)}</span><span>EWMA${b(o.e)}</span>`).join('');
+  const last=planned[planned.length-1];
+  document.getElementById('h-B').textContent=last&&last.r!=null?`${st.n>1?'By the week of '+fmtD(last.wk):'This plan'} puts ${M.short} ACWR at ${last.r.toFixed(2)} (EWMA ${last.e==null?'—':last.e.toFixed(2)})${last.r>1.3||last.e>1.3?' — above the 1.3 guide':last.r<.8?' — below 0.8':' — inside the band'}`:'Not enough history for a predicted ratio';
+}
+
+function init(){
+  if(!Q){ document.querySelector('.main').innerHTML='<div class="empty">No pipeline data found. Run <code>python run.py</code>.</div>'; return; }
+  prepare(); const h=readHash();
+  if(['all','Senior','Reserve'].includes(h.g)) st.sq=h.g; if(h.a) st.a=h.a; if(h.line) st.line=h.line; if(h.grp) st.grp=h.grp;
+  if(METRICS[h.m]) st.m=h.m; if(h.start) st.start=h.start; if(+h.n>=1&&+h.n<=4) st.n=+h.n;
+  if(st.a!=='squad'&&!Q.athletes.includes(st.a)) st.a='squad';
+  render();
+}
+gate(init);
+</script>
+</body>
+</html>

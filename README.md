@@ -6,9 +6,9 @@ pseudonymised, browser-only dashboard comes out.
 
 **[Live demo →](https://emcgleenan23.github.io/gps-dashboard-demo/)** · [Write-up](https://emcgleenan23.github.io/gps-performance-dashboard.html) (synthetic squad, no real athlete data)
 
-| Session analysis | Load monitoring |
-|---|---|
-| One match or training session at 10-second resolution: per-minute running, most demanding scenarios (1–10 min), player comparison, benchmarks by position and playing group. | Daily load, acute:chronic workload, changepoint detection and a time-series toolkit (smoothing, power spectrum, Morlet wavelet, Holt-Winters forecast). |
+| Session analysis | Load monitoring | Planner |
+|---|---|---|
+| One match or training session at 10-second resolution: per-minute running, most demanding scenarios (1–10 min), player comparison, benchmarks by position and playing group. | Daily load, changepoint detection, and rolling vs EWMA acute:chronic workload on the same series, so you can see which flags line up with a sustained shift. | Suggests the next 1–4 weeks of pitch sessions around the fixtures (microcycle sized to the selection's match average); change any day's session, start time or load and see recovery hours, week totals against HSR/sprint guides and the predicted ACWR update. |
 
 ## Why it's built this way
 
@@ -43,7 +43,7 @@ python run.py                          # pipeline -> outputs/
 open dashboard/index.html              # works straight from disk, no server
 ```
 
-`python publish.py --public` inlines each page (CSS, JS, data) into a single file in `docs/` for
+`python publish.py --public` inlines each page (session analysis, load monitoring, planner) with its CSS, JS and data into a single file in `docs/` for
 GitHub Pages. It refuses to run unless the pipeline is pointed at the synthetic sample.
 
 ## Using real data

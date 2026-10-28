@@ -18,6 +18,7 @@
     <nav class="tabs" aria-label="Pages">
       <a href="index.html" data-page="index.html" aria-current="page">Session analysis</a>
       <a href="load.html" data-page="load.html">Load monitoring</a>
+      <a href="planner.html" data-page="planner.html">Planner</a>
     </nav>
     <span class="badge" id="badge">Pipeline output</span>
   </header>
@@ -432,8 +433,8 @@ function drawTable(s){
   seg('t-per',isM?[{v:'1st',l:'1st half',disabled:!H},{v:'2nd',l:'2nd half',disabled:!H},{v:'full',l:H?'Full game':'Full recording'}]
                  :[{v:'full',l:'Full session'}].concat(st.per==='drill'&&st.drill?[{v:'drill',l:st.drill}]:[]),tb.per,v=>{tb.per=v;render();});
   const hl=new Set(Object.keys(s.players).map(a=>(INFO[a]||{}).line).filter(Boolean)), hg=new Set(Object.keys(s.players).map(a=>(INFO[a]||{}).group).filter(Boolean));
-  sel('t-line',[{v:'all',l:'All positions'}].concat(LINES.filter(l=>hl.has(l)).map(l=>({v:l,l}))),tb.line,v=>{tb.line=v;render();});
-  sel('t-grp',[{v:'all',l:'All playing groups'}].concat(GROUPS.filter(g=>hg.has(g)).map(g=>({v:g,l:g}))),tb.grp,v=>{tb.grp=v;render();});
+  sel('t-line',[{v:'all',l:'All positions'}].concat(ordered(hl,LINES).map(l=>({v:l,l}))),tb.line,v=>{tb.line=v;render();});
+  sel('t-grp',[{v:'all',l:'All playing groups'}].concat(ordered(hg,GROUPS).map(g=>({v:g,l:g}))),tb.grp,v=>{tb.grp=v;render();});
   seg('t-by',[{v:'player',l:'Players'},{v:'line',l:'By position'},{v:'grp',l:'By playing group'}],tb.by,v=>{tb.by=v;render();});
   let rows=tableRows(s); const all=rows;
   if(tb.by!=='player') rows=groupRows(rows,tb.by);
