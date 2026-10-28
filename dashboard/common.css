@@ -166,9 +166,7 @@ button{font-family:inherit}
 /* ---- decluttered layout: one line of context per section, details on demand ---- */
 .sec .d:not([id]){display:none}
 .hint{display:none}
-.eyebrow{display:none}
-.story h1{font-size:21px}
-.story li:nth-child(n+3){display:none}
+.story{display:none}
 .legend{gap:12px;font-size:11px}
 details.more{margin-top:20px;border-top:1px solid var(--line);padding-top:12px}
 details.more>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);list-style-position:inside}
