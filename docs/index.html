@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Session Analysis</title>
+<title>GPS report · Session Analysis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -174,13 +174,27 @@ button{font-family:inherit}
 @media(max-width:1100px){.defs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.defs{grid-template-columns:1fr}}
 
+/* ---- decluttered layout: one line of context per section, details on demand ---- */
+.sec .d:not([id]){display:none}
+.hint{display:none}
+.eyebrow{display:none}
+.story h1{font-size:21px}
+.story li:nth-child(n+3){display:none}
+.legend{gap:12px;font-size:11px}
+details.more{margin-top:20px;border-top:1px solid var(--line);padding-top:12px}
+details.more>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);list-style-position:inside}
+details.more>summary:hover{color:var(--ink)}
+details.more .defs{margin-top:12px}
+details.more .foot{margin-top:12px}
+
 </style>
+<style>#s-time,#s-bars,#s-tbl{display:none}</style>
 </head>
 <body>
 
 <div id="app">
   <header class="topbar">
-    <div class="brand"><span class="dot"></span><div><div class="title">Senior Football — Performance</div><div class="sub">STATSports GPS</div></div></div>
+    <div class="brand"><span class="dot"></span><div><div class="title">GPS report</div><div class="sub">Senior football · STATSports</div></div></div>
     <nav class="tabs" aria-label="Pages">
       <a href="index.html" data-page="index.html" aria-current="page">Session analysis</a>
       <a href="load.html" data-page="load.html">Load monitoring</a>
@@ -247,7 +261,7 @@ button{font-family:inherit}
         </div>
         <div class="tbl-wrap"><table class="mtable" id="mtable"></table></div>
       </div>
-      <div class="sec"><span class="l">E</span><span class="t">Metric definitions</span><span class="d">what each number on this page means</span><span class="rule"></span></div>
+      <details class="more"><summary>Metric definitions and sources</summary>
       <div class="defs">
         <div class="def"><div class="dh"><span class="sw" style="background:var(--m-td)"></span>Total distance (TD)</div>
           <p>How far the player travelled, in metres. Built up from STATSports' filtered speed, 10 times a second. <b>TD/min</b> is the same distance divided by minutes on the pitch, so players with different minutes can be compared fairly.</p></div>
@@ -270,6 +284,7 @@ button{font-family:inherit}
       </div>
 
       <p class="foot" id="foot"></p>
+      </details>
     </main>
   </div>
 </div>

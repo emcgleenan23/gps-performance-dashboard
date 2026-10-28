@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Load Monitoring</title>
+<title>GPS report · Load Monitoring</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
+<style>#s-F{display:none}</style>
 </head>
 <body>
 
 <div id="app">
   <header class="topbar">
-    <div class="brand"><span class="dot"></span><div><div class="title">Senior Football — Performance</div><div class="sub">STATSports GPS</div></div></div>
+    <div class="brand"><span class="dot"></span><div><div class="title">GPS report</div><div class="sub">Senior football · STATSports</div></div></div>
     <nav class="tabs" aria-label="Pages">
       <a href="index.html" data-page="index.html">Session analysis</a>
       <a href="load.html" data-page="load.html" aria-current="page">Load monitoring</a>
@@ -53,23 +54,22 @@
         <div class="p-head"><div><h2 id="h-F"></h2><p class="p-sub" id="s-F"></p></div>
           <div class="toggle" id="f-scn" role="group" aria-label="Data"></div></div>
         <div id="c-F"></div>
-        <div class="legend"><span><i style="background:#c9cdd3"></i>raw daily load</span><span><i style="background:#e4571f"></i>7-day avg, block above season mean</span>
-          <span><i style="background:#2b6a72"></i>7-day avg, block below season mean</span><span><i style="background:#111318;width:2px;height:10px"></i>changepoint</span>
-          <span><i style="background:#e4571f;width:7px;height:7px;border-radius:50%"></i>spike (&gt; mean + 1 SD) — hover for date</span></div>
+        <div class="legend"><span><i style="background:#c9cdd3"></i>daily</span><span><i style="background:#e4571f"></i>7-day avg (above mean)</span>
+          <span><i style="background:#2b6a72"></i>7-day avg (below mean)</span><span><i style="background:#111318;width:2px;height:10px"></i>changepoint</span>
+          <span><i style="background:#e4571f;width:7px;height:7px;border-radius:50%"></i>spike</span></div>
       </div>
 
       <div class="sec"><span class="l">C</span><span class="t">ACWR vs changepoint</span><span class="d">the same series as B, two ways of spotting a change in load</span><span class="rule"></span></div>
       <div class="panel">
         <h2 id="h-AC"></h2><p class="p-sub" id="s-AC"></p>
         <div id="c-AC"></div>
-        <div class="legend"><span><i style="background:#6b7078"></i>rolling ACWR (7-day ÷ 28-day)</span><span><i style="background:#e4571f"></i>EWMA ACWR</span>
-          <span><i style="background:var(--ok-band);height:10px"></i>0.8–1.3 band</span><span><i style="background:#111318;width:2px;height:10px"></i>changepoint (from B)</span>
-          <span><i style="background:#e4571f;width:7px;height:7px;border-radius:50%"></i>day outside the band</span></div>
+        <div class="legend"><span><i style="background:#6b7078"></i>rolling ACWR</span><span><i style="background:#e4571f"></i>EWMA ACWR</span>
+          <span><i style="background:var(--ok-band);height:10px"></i>0.8–1.3</span><span><i style="background:#111318;width:2px;height:10px"></i>changepoint</span></div>
       </div>
 
       <div class="sec"><span class="l">D</span><span class="t">Daily load</span><span class="rule"></span></div>
       <div class="panel"><h2 id="h-load"></h2><p class="p-sub" id="s-load"></p><div id="c-load"></div></div>
-      <p class="foot" id="foot"></p>
+      <details class="more"><summary>Methods and sources</summary><p class="foot" id="foot"></p></details>
     </main>
   </div>
 </div>
@@ -237,7 +237,7 @@ function render(){
   const AC=drawAC(R,E,base,dates,F);
   drawLoad(ser,i0,i1);
   document.getElementById('h-AC').textContent=AC.days?`Rolling ACWR left the band on ${AC.outR} of ${AC.days} days and EWMA ACWR on ${AC.outE}; changepoint analysis found ${F.cps.length} shift${F.cps.length!==1?'s':''}`:'Not enough history yet for a stable ratio';
-  document.getElementById('s-AC').textContent=`${st.scn==='real'?who():st.scn==='good'?'Synthetic well-periodised athlete':'Synthetic sporadically-loaded athlete'} · ${F.cps.length?`${AC.nearR} of the ${F.cps.length} shift${F.cps.length!==1?'s':''} had a rolling-ACWR flag within a week (EWMA: ${AC.nearE}) · `:''}ACWR reacts to single spikes and rest days; changepoints mark sustained shifts in the 7-day load.`;
+  document.getElementById('s-AC').textContent=`${F.cps.length?`${AC.nearR} of ${F.cps.length} shift${F.cps.length!==1?'s':''} had a rolling-ACWR flag within a week (EWMA ${AC.nearE}). `:''}ACWR reacts to single spikes and rest days; changepoints mark sustained shifts.`;
 
   const lab=st.scn==='real'?`${who()} · daily ${M.label.toLowerCase()} (${M.unit})`:(st.scn==='good'?'Synthetic well-periodised athlete (AU)':'Synthetic sporadically-loaded athlete (AU)');
   document.getElementById('s-F').textContent=`${lab} · ${F.cps.length} abrupt shift${F.cps.length!==1?'s':''} in the 7-day load${F.cps.length?' ('+F.cps.map(i=>fmtD(dates[i])).join(', ')+')':''} · ${F.spikes.length} spike days · hover any day for its date and values`;

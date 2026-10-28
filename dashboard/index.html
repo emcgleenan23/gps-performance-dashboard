@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Session Analysis</title>
+<title>GPS report · Session Analysis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
+<style>#s-time,#s-bars,#s-tbl{display:none}</style>
 </head>
 <body>
 
 <div id="app">
   <header class="topbar">
-    <div class="brand"><span class="dot"></span><div><div class="title">Senior Football — Performance</div><div class="sub">STATSports GPS</div></div></div>
+    <div class="brand"><span class="dot"></span><div><div class="title">GPS report</div><div class="sub">Senior football · STATSports</div></div></div>
     <nav class="tabs" aria-label="Pages">
       <a href="index.html" data-page="index.html" aria-current="page">Session analysis</a>
       <a href="load.html" data-page="load.html">Load monitoring</a>
@@ -81,7 +82,7 @@
         </div>
         <div class="tbl-wrap"><table class="mtable" id="mtable"></table></div>
       </div>
-      <div class="sec"><span class="l">E</span><span class="t">Metric definitions</span><span class="d">what each number on this page means</span><span class="rule"></span></div>
+      <details class="more"><summary>Metric definitions and sources</summary>
       <div class="defs">
         <div class="def"><div class="dh"><span class="sw" style="background:var(--m-td)"></span>Total distance (TD)</div>
           <p>How far the player travelled, in metres. Built up from STATSports' filtered speed, 10 times a second. <b>TD/min</b> is the same distance divided by minutes on the pitch, so players with different minutes can be compared fairly.</p></div>
@@ -104,6 +105,7 @@
       </div>
 
       <p class="foot" id="foot"></p>
+      </details>
     </main>
   </div>
 </div>
