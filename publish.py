@@ -82,7 +82,7 @@ UNLOCK = r"""<!DOCTYPE html>
   #e{min-height:18px;margin-top:12px;font-size:13px;color:#f0a58a}
   .n{margin-top:26px;font-size:12px;color:#6c7079;line-height:1.5}
 </style></head>
-<body><div class="c"><div class="m"></div><h1>Performance dashboard</h1><p>__TITLE__ · private. Enter the password to open.</p>
+<body><div class="c"><div class="m"></div><h1>GPS report</h1><p>__TITLE__ · private. Enter the password to open.</p>
 <form id="f"><input id="pw" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password" autofocus required><button id="b">Open</button></form>
 <label><input type="checkbox" id="rem"> Remember on this device</label>
 <div id="e" role="alert"></div>
